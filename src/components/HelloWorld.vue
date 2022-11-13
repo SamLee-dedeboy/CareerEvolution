@@ -1,5 +1,34 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import * as vue from "vue"
+const server_address = vue.inject("server_address")
+
+vue.onMounted(() => {
+  test_fetch()
+})
+
+async function test_fetch() {
+  await fetch(`${server_address}/data/artists`)
+    .then(res => res.json())
+    .then(json => {
+        console.log(json)
+    })
+}
+// async function test_post() {
+//   await fetch(`${server_address}/processed_data/ids_to_articles`, {
+//       method: "POST",
+//       headers: {
+//           "Accept": "application/json",
+//           "Content-Type": "application/json"
+//       },
+//       body: JSON.stringify(article_ids)
+//   })
+//       .then(res => res.json())
+//       .then(json => {
+//           target_articles.value = json
+//           console.log("articles fetched")
+//       }) 
+// }
 
 defineProps<{ msg: string }>()
 
