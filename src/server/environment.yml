@@ -1,0 +1,8 @@
+name: career_evolution
+channels:
+  - defaults
+dependencies:
+  - python=3.10.4
+  - flask
+  - flask_cors
+  
