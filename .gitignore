@@ -25,3 +25,4 @@ dist-ssr
 *.json
 *.pyc
 __pycache__/
+*.tsv

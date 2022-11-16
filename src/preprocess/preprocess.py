@@ -3,144 +3,153 @@ import csv
 from collections import defaultdict
 from pprint import pprint
 
-def preprocess_raw():
-    csvFilePath = r'titles.csv'
-    jsonFilePath = r'titles.json'
-    csv_to_json(csvFilePath, jsonFilePath, lambda x: x)
-    csvFilePath = r'credits.csv'
-    jsonFilePath = r'credits.json'
-    csv_to_json(csvFilePath, jsonFilePath, lambda x: x)
+def main():
+    if __name__ == '__main__':
+        # movie_principals = tsv_to_dicts(r'principals.tsv') 
+        # actor_names = tsv_to_dicts(r'name.tsv') 
+        # actor_nid_dict = {x['nconst']: x for x in actor_names}
+        movie_infos = tsv_to_dicts(r'basics.tsv')
+        filter_movie_by_year(movie_infos)
 
-def csv_to_json(csvFilePath, jsonFilePath, preprocess_func):
-    jsonArray = []
-      
+        movie_ids = list(map(lambda movie: movie['tconst'], movie_infos))
+        # movie_ids = ['tt0000002', 'tt0000003', 'tt0000004','tt0000006','tt0000007','tt0000010','tt0000011']
+        # movie_ids = ['tt0000007']
+        # scrape_imdb_film_cast(movie_ids)
+
+        # find = False
+        # for principal_row in movie_principals:
+        #     if(principal_row['tconst'] == 'tt0496806'):
+        #         nconst = principal_row['nconst']
+        #         print(actor_nid_dict[nconst])
+        #         find=True
+        #     elif find:
+        #         return
+                
+
+
+
+def tsv_to_dicts(csvFilePath):
     #read csv file
-    with open(csvFilePath, encoding='utf-8') as csvf: 
+    csvReader = None
+    csvf = open(csvFilePath, encoding='utf-8')
         #load csv file data using csv library's dictionary reader
-        csvReader = csv.DictReader(csvf) 
-
-        #convert each csv row into python dict
-        for row in csvReader: 
-            #add this python dict to json array
-            jsonArray.append(row)
-    
-    preprocess_data = preprocess_func(jsonArray)
-    #convert python jsonArray to JSON String and write to file
-    with open(jsonFilePath, 'w', encoding='utf-8') as jsonf: 
-
-        jsonString = json.dumps(preprocess_data, indent=4)
-        jsonf.write(jsonString)
+    csvReader = csv.DictReader(csvf, delimiter='\t', skipinitialspace=True) 
+    return csvReader
+    for row in csvReader: 
+        #add this python dict to json array
+        if(row['tconst'] == 'tt0496806'):
+            pprint(row)
 
 def save_json(data, filepath=r'new_dict.json'):
     with open(filepath, 'w') as fp:
         json.dump(data, fp, indent=4)
 
-def group_artist_works(filepath=r'credits.json'):
-
-    data = json.load(open(filepath))
-    artist_work_dict = defaultdict(list)
-    artist_name_dict = defaultdict(list)
-    for work in data:
-        artist_id = work['person_id']
-        artist_name = work['name']
-        artist_character = work['character']
-        artist_role = work['role']
-        work_id = work['id']
-        artist_work_dict[artist_id].append(
-            {
-                "id": work_id,
-                "character": artist_character,
-                "role": artist_role,
-            }
-        )
-        artist_name_dict[artist_id] = artist_name
-    # save_json(artist_work_dict, "artist_works_dict.json")
-    save_json(artist_name_dict, "artist_name_dict.json")
-
-def scrape_career(artist_name_path=r'artist_name_dict.json'):
+def scrape_imdb_film_cast(film_id_list):
     import requests
     from bs4 import BeautifulSoup
-    wiki_prefix = "https://en.wikipedia.org/wiki/"
-    artist_dict = json.load(open(artist_name_path))
-    # artist_career_dict = {}
-    discarded_artist = []
+    imdb_film_prefix = "https://www.imdb.com/title/"
+    imdb_full_credit_suffix = "/fullcredits"
     count = 0
-    for id, name in artist_dict.items():
+    movie_top_casts = []
+    exceptions = []
+    for id in film_id_list[:50]:
         count += 1
-        print("{}/{}".format(count, len(artist_dict.keys())))
-        wiki_id = name.replace(" ", "_")
-        url = wiki_prefix + wiki_id 
+        print("{}/{}".format(count, len(film_id_list)))
+        url = imdb_film_prefix + id + imdb_full_credit_suffix 
         response = requests.get(url)
-        career_sections = []
         try:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
-                headers = soup.find_all("span", attrs={"class": "mw-headline"})
-                career_header = None
-                for header in headers:
-                    if "career" in header.text.lower():
-                        career_header = header
-                if career_header is None:
-                    discarded_artist.append(
-                        {
-                            "id": id,
-                            "name": name,
-                            "reason": "No career section",
-                        }
-                    )
-                    print("no career section", name)
-                    continue
-                next_sibling = career_header.parent.next_sibling.next_element
-                while(True):
-                    if next_sibling == "\n":
-                        next_sibling = next_sibling.next_element
-                    if next_sibling.name == "h3":
-                        new_section = {}
-                        section_header = next_sibling
-                        header_content = section_header.find_all("span", attrs={"class": "mw-headline"})[0]
-                        new_section = { "header": header_content.text}
-                        career_sections.append(new_section)
-                        p_count = 0
-                        next_sibling = next_sibling.next_sibling
-                    elif next_sibling.name == "p":
-                        content = ''.join(next_sibling.strings)
-                        if len(career_sections) == 0:
-                            career_sections.append({"header": "empty"})
-                        career_sections[len(career_sections)-1]['p' + str(p_count)] = content
-                        p_count += 1
-                        next_sibling = next_sibling.next_sibling
-                    elif next_sibling.name == "h2":
-                        break
-                    else:
-                        next_sibling = next_sibling.next_sibling
-                # artist_career_dict[id]["career"] = career_sections
-            else:
-                discarded_artist.append(
-                    {
+                cast_list_table = soup.find_all("table", attrs={"class": "cast_list"})
+                if not cast_list_table:
+                    exceptions.append({
                         "id": id,
-                        "name": name,
-                        "reason": "No wiki page"
-                    }
-                )
-                print("no wiki page:", name)
-                continue
-        except: 
-            discarded_artist.append(
-                {
+                        "exception": "no cast list available"
+                    })
+                    continue
+                cast_list_table = cast_list_table[0].contents
+
+                top_casts = []
+                max_candidates = 15
+                candidate_num = 0
+                for cast_row in cast_list_table: 
+                    if candidate_num >= max_candidates: break
+                    if cast_row == '\n': continue
+                    # print(cast_row)
+                    # print("--------------")
+                    if cast_row.has_attr('class'):
+                        cast = {
+                            "rank": candidate_num + 1,
+                        }
+                        for info in cast_row.contents:
+                            if info == '\n': continue
+                            # image
+                            if info.has_attr("class") and info['class'][0] == 'primary_photo':
+                                img_tag = info.find("img")
+                                if img_tag is None:
+                                    img_src = "None"
+                                else:
+                                    img_src = img_tag.get('src')
+                                cast['img'] = img_src
+                            # actor name
+                            if not info.has_attr("class"):
+                                a_tag = info.find("a")
+                                if a_tag is None:
+                                    actor_name = "None"
+                                else:
+                                    actor_name = a_tag.text.strip()
+                                cast['name'] = actor_name
+                            # character name
+                            if info.has_attr("class") and info['class'][0] == 'character':
+                                a_tag = info.find("a")
+                                if a_tag is None:
+                                    character_name = "None"
+                                else:
+                                    character_name = a_tag.text.strip()
+                                cast['character'] = character_name
+                        top_casts.append(cast)
+                        candidate_num += 1
+                movie_info = {
                     "id": id,
-                    "name": name,
-                    "reason": "Unknown Exception"
+                    "top_casts": top_casts
                 }
-            )
-            print("exception:", name)
-            continue
-        career = {
-            "id": id,
-            "name": name,
-            "career": career_sections
-        }
-        save_json(career, "careers/" +id+"_career.json")
-    save_json(discarded_artist, "discarded_artist.json")
+                save_json(movie_info, "movie_top_casts/" +id+".json")
+                # movie_top_casts.append(movie_info)
+        except Exception as e:
+            exceptions.append({
+                "id": id,
+                "exception": "unknown exception"
+            })
+        save_json(exceptions, "movie_top_casts_exceptions.json")
+
+def filter_movie_by_year(movie_list):
+    kept = []
+    kept_2 = []
+    kept_3 = []
+    kept_4 = []
+    count = 0
+    for movie in movie_list:
+        # if movie['tconst'] == 'tt1210166':
+        #     print(movie)
+        #     break
+        count += 1
+        if count % 1000 == 0:
+            print(count)
+        year = movie['startYear']
+        time = movie['runtimeMinutes']
+        if year > "1950" and time > "60":
+            kept.append(movie)
+        if year > "1950" and time > "70":
+            kept_2.append(movie)
+        if year > "1950" and time > "80":
+            kept_3.append(movie)
+        if year > "1950" and time > "90":
+            kept_4.append(movie)
+    print(len(kept))
+    print(len(kept_2))
+    print(len(kept_3))
+    print(len(kept_4))
+    return movie
 
 def add_artist_work_description(
     artist_works_dict_path=r'artist_works_dict.json', 
@@ -178,6 +187,7 @@ def add_artist_work_description(
     
     save_json(artist_works_w_description_dict, r'artist_works_w_description.json')
 
+main()
 
 
 
