@@ -2,19 +2,24 @@ import json
 import csv
 from collections import defaultdict
 from pprint import pprint
+import requests
+from bs4 import BeautifulSoup
 
 def main():
     if __name__ == '__main__':
         # movie_principals = tsv_to_dicts(r'principals.tsv') 
         # actor_names = tsv_to_dicts(r'name.tsv') 
         # actor_nid_dict = {x['nconst']: x for x in actor_names}
-        movie_infos = tsv_to_dicts(r'basics.tsv')
-        filter_movie_by_year(movie_infos)
+        # movie_infos = tsv_to_dicts(r'basics.tsv')
 
-        movie_ids = list(map(lambda movie: movie['tconst'], movie_infos))
+        # movie_ids = list(map(lambda movie: movie['tconst'], movie_infos))
         # movie_ids = ['tt0000002', 'tt0000003', 'tt0000004','tt0000006','tt0000007','tt0000010','tt0000011']
         # movie_ids = ['tt0000007']
         # scrape_imdb_film_cast(movie_ids)
+        # actor_ids = ['tt0000002', 'tt0000003', 'tt0000004','tt0000006','tt0000007','tt0000010','tt0000011']
+        actor_ids = ['nm0000199']
+        scrape_actor_works(actor_ids)
+
 
         # find = False
         # for principal_row in movie_principals:
@@ -45,14 +50,12 @@ def save_json(data, filepath=r'new_dict.json'):
         json.dump(data, fp, indent=4)
 
 def scrape_imdb_film_cast(film_id_list):
-    import requests
-    from bs4 import BeautifulSoup
     imdb_film_prefix = "https://www.imdb.com/title/"
     imdb_full_credit_suffix = "/fullcredits"
     count = 0
     movie_top_casts = []
     exceptions = []
-    for id in film_id_list[:50]:
+    for id in film_id_list:
         count += 1
         print("{}/{}".format(count, len(film_id_list)))
         url = imdb_film_prefix + id + imdb_full_credit_suffix 
@@ -70,10 +73,8 @@ def scrape_imdb_film_cast(film_id_list):
                 cast_list_table = cast_list_table[0].contents
 
                 top_casts = []
-                max_candidates = 15
                 candidate_num = 0
                 for cast_row in cast_list_table: 
-                    if candidate_num >= max_candidates: break
                     if cast_row == '\n': continue
                     # print(cast_row)
                     # print("--------------")
@@ -122,7 +123,84 @@ def scrape_imdb_film_cast(film_id_list):
             })
         save_json(exceptions, "movie_top_casts_exceptions.json")
 
-def filter_movie_by_year(movie_list):
+# def scrape_actor_works(actor_id_list):
+#     imdb_actor_prefix = "https://www.imdb.com/name/"
+#     count = 0
+#     exceptions = []
+#     for id in actor_id_list:
+#         count += 1
+#         print("{}/{}".format(count, len(actor_id_list)))
+#         url = imdb_actor_prefix + id
+#         response = requests.get(url)
+#         try:
+#             if response.status_code == 200:
+#                 soup = BeautifulSoup(response.content, 'html.parser')
+#                 filmography_container = soup.find("div", attrs={"id": "filmography"})
+#                 if not filmography_container:
+#                     exceptions.append({
+#                         "id": id,
+#                         "exception": "no filmography available"
+#                     })
+#                     continue
+#                 top_casts = []
+#                 max_candidates = 15
+#                 candidate_num = 0
+#                 for cast_row in filmography_container.children: 
+#                     if cast_row == '\n': continue
+
+#                     print(cast_row)
+#                     return
+#                     if candidate_num >= max_candidates: break
+#                     # print(cast_row)
+#                     # print("--------------")
+#                     if cast_row.has_attr('class'):
+#                         cast = {
+#                             "rank": candidate_num + 1,
+#                         }
+#                         for info in cast_row.contents:
+#                             if info == '\n': continue
+#                             # image
+#                             if info.has_attr("class") and info['class'][0] == 'primary_photo':
+#                                 img_tag = info.find("img")
+#                                 if img_tag is None:
+#                                     img_src = "None"
+#                                 else:
+#                                     img_src = img_tag.get('src')
+#                                 cast['img'] = img_src
+#                             # actor name
+#                             if not info.has_attr("class"):
+#                                 a_tag = info.find("a")
+#                                 if a_tag is None:
+#                                     actor_name = "None"
+#                                 else:
+#                                     actor_name = a_tag.text.strip()
+#                                 cast['name'] = actor_name
+#                             # character name
+#                             if info.has_attr("class") and info['class'][0] == 'character':
+#                                 a_tag = info.find("a")
+#                                 if a_tag is None:
+#                                     character_name = "None"
+#                                 else:
+#                                     character_name = a_tag.text.strip()
+#                                 cast['character'] = character_name
+#                         top_casts.append(cast)
+#                         candidate_num += 1
+#                 movie_info = {
+#                     "id": id,
+#                     "top_casts": top_casts
+#                 }
+#                 save_json(movie_info, "movie_top_casts/" +id+".json")
+#                 # movie_top_casts.append(movie_info)
+#         except Exception as e:
+#             exceptions.append({
+#                 "id": id,
+#                 "exception": "unknown exception"
+#             })
+#         save_json(exceptions, "movie_top_casts_exceptions.json")
+
+
+
+def filter_movie(movie_list):
     kept = []
     kept_2 = []
     kept_3 = []
@@ -150,6 +228,53 @@ def filter_movie_by_year(movie_list):
     print(len(kept_3))
     print(len(kept_4))
     return movie
+
+def scrape_actor_works(actor_id_list):
+    from contextlib import closing
+    from selenium.webdriver import Chrome # pip install selenium
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as EC
+    imdb_actor_prefix = "https://www.imdb.com/name/"
+    count = 0
+    exceptions = []
+    for id in actor_id_list:
+        count += 1
+        print("{}/{}".format(count, len(actor_id_list)))
+        url = imdb_actor_prefix + id
+        print(url)
+        # use firefox to get page with javascript generated content
+        with closing(Chrome()) as driver:
+            driver.get(url)
+            filmography_container = driver.find_element("id", "filmography")
+            if not filmography_container:
+                exceptions.append({
+                    "id": id,
+                    "exception": "no filmography available"
+                })
+                continue
+            section_headers = filmography_container.find_elements("class", "head")
+            click = False
+            for header in section_headers:
+                header_name = header.get_attribute("data-category")
+                # don't need to click on first section
+                if click:
+                    header.click()
+                else:
+                    click = True
+                # wait for the page to load
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "filmo-category-section"))
+                )
+                # store it to string variable
+                page_source = driver.page_source
+
+                soup = BeautifulSoup(page_source)
+                expanded_section = soup.find("div", attrs={"class": "filmo-category-section"})
+                for row in expanded_section.children:
+                    film_id = row['id'].split('-')[1]
+                    print(header_name, film_id)
+                return
 
 def add_artist_work_description(
     artist_works_dict_path=r'artist_works_dict.json', 
