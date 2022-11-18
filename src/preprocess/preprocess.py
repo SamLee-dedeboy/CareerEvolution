@@ -10,26 +10,17 @@ def main():
         # movie_principals = tsv_to_dicts(r'principals.tsv') 
         # actor_names = tsv_to_dicts(r'name.tsv') 
         # actor_nid_dict = {x['nconst']: x for x in actor_names}
-        # movie_infos = tsv_to_dicts(r'basics.tsv')
-
-        # movie_ids = list(map(lambda movie: movie['tconst'], movie_infos))
-        # movie_ids = ['tt0000002', 'tt0000003', 'tt0000004','tt0000006','tt0000007','tt0000010','tt0000011']
-        # movie_ids = ['tt0000007']
-        # scrape_imdb_film_cast(movie_ids)
-        # actor_ids = ['tt0000002', 'tt0000003', 'tt0000004','tt0000006','tt0000007','tt0000010','tt0000011']
-        actor_ids = ['nm0000199']
-        scrape_actor_works(actor_ids)
+        # movie_infos = tsv_to_dicts(r'title_basics.tsv')
+        # print(len(movie_ids))
+        # filtered_movies = filter_movie(movie_infos)
+        # save_json(filtered_movies, r'filtered_movies.json')
+        filtered_movies = json.load(open(r'filtered_movies.json'))
+        movie_ids = list(map(lambda movie: movie['tconst'], filtered_movies))
+        scrape_imdb_film_credits(movie_ids)
 
 
-        # find = False
-        # for principal_row in movie_principals:
-        #     if(principal_row['tconst'] == 'tt0496806'):
-        #         nconst = principal_row['nconst']
-        #         print(actor_nid_dict[nconst])
-        #         find=True
-        #     elif find:
-        #         return
-                
+
+               
 
 
 
@@ -49,79 +40,119 @@ def save_json(data, filepath=r'new_dict.json'):
     with open(filepath, 'w') as fp:
         json.dump(data, fp, indent=4)
 
-def scrape_imdb_film_cast(film_id_list):
+def scrape_imdb_film_credits(film_id_list):
     imdb_film_prefix = "https://www.imdb.com/title/"
     imdb_full_credit_suffix = "/fullcredits"
     count = 0
-    movie_top_casts = []
-    exceptions = []
-    for id in film_id_list:
+    movie_credits = []
+    for id in film_id_list[:100]:
         count += 1
         print("{}/{}".format(count, len(film_id_list)))
         url = imdb_film_prefix + id + imdb_full_credit_suffix 
         response = requests.get(url)
-        try:
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                cast_list_table = soup.find_all("table", attrs={"class": "cast_list"})
-                if not cast_list_table:
-                    exceptions.append({
-                        "id": id,
-                        "exception": "no cast list available"
-                    })
-                    continue
-                cast_list_table = cast_list_table[0].contents
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            cast_list = scrape_cast_list(soup)
+            director_list = scrape_simpleTable(soup, "director")
+            writer_list = scrape_simpleTable(soup, "writer")
+            producer_list = scrape_simpleTable(soup, "producer")
 
-                top_casts = []
-                candidate_num = 0
-                for cast_row in cast_list_table: 
-                    if cast_row == '\n': continue
-                    # print(cast_row)
-                    # print("--------------")
-                    if cast_row.has_attr('class'):
-                        cast = {
-                            "rank": candidate_num + 1,
-                        }
-                        for info in cast_row.contents:
-                            if info == '\n': continue
-                            # image
-                            if info.has_attr("class") and info['class'][0] == 'primary_photo':
-                                img_tag = info.find("img")
-                                if img_tag is None:
-                                    img_src = "None"
-                                else:
-                                    img_src = img_tag.get('src')
-                                cast['img'] = img_src
-                            # actor name
-                            if not info.has_attr("class"):
-                                a_tag = info.find("a")
-                                if a_tag is None:
-                                    actor_name = "None"
-                                else:
-                                    actor_name = a_tag.text.strip()
-                                cast['name'] = actor_name
-                            # character name
-                            if info.has_attr("class") and info['class'][0] == 'character':
-                                a_tag = info.find("a")
-                                if a_tag is None:
-                                    character_name = "None"
-                                else:
-                                    character_name = a_tag.text.strip()
-                                cast['character'] = character_name
-                        top_casts.append(cast)
-                        candidate_num += 1
-                movie_info = {
-                    "id": id,
-                    "top_casts": top_casts
-                }
-                save_json(movie_info, "movie_top_casts/" +id+".json")
-                # movie_top_casts.append(movie_info)
-        except Exception as e:
-            exceptions.append({
+            film_credits = {
                 "id": id,
-                "exception": "unknown exception"
+                "casts": cast_list,
+                "directors": director_list,
+                "writers": writer_list,
+                "producers": producer_list
+            }
+            save_json(film_credits, "film_credits/" +id+".json")
+
+def scrape_cast_list(soup):
+    try:
+        cast_list_table = soup.find_all("table", attrs={"class": "cast_list"})
+        if not cast_list_table:
+            return None
+        cast_list_table = cast_list_table[0].contents
+
+        casts = []
+        candidate_num = 0
+        for cast_row in cast_list_table: 
+            if cast_row == '\n': continue
+            # print(cast_row)
+            # print("--------------")
+            if cast_row.has_attr('class'):
+                cast = {
+                    "rank": candidate_num + 1,
+                }
+                for info in cast_row.contents:
+                    if info == '\n': continue
+                    # image
+                    if info.has_attr("class") and info['class'][0] == 'primary_photo':
+                        img_tag = info.find("img")
+                        if img_tag is None:
+                            img_src = "None"
+                        else:
+                            img_src = img_tag.get('src')
+                        cast['img'] = img_src
+                    # actor name
+                    if not info.has_attr("class"):
+                        a_tag = info.find("a")
+                        if a_tag is None:
+                            actor_name = "None"
+                        else:
+                            actor_name = a_tag.text.strip()
+                            src = a_tag.get('href')
+                            if src is None:
+                                actor_id = None
+                            else:
+                                actor_id = src.split("/")[2]
+                        cast['name'] = actor_name
+                        cast['id'] = actor_id
+                    # character name
+                    if info.has_attr("class") and info['class'][0] == 'character':
+                        a_tag = info.find("a")
+                        if a_tag is None:
+                            character_name = "None"
+                        else:
+                            character_name = a_tag.text.strip()
+                        cast['character'] = character_name
+                casts.append(cast)
+                candidate_num += 1
+        return casts
+        # movie_info = {
+        #     "id": id,
+        #     "top_casts": top_casts
+        # }
+        # save_json(movie_info, "movie_top_casts/" +id+".json")
+        # movie_top_casts.append(movie_info)
+    except Exception as e:
+        return None
+
+
+def scrape_simpleTable(soup, id):
+    try:
+        header =  soup.find("h4", attrs={"id": id})
+        table = header.nextSibling.nextSibling
+        rows = table.find_all("tr")
+        credits = []
+        for row in rows:
+            tds = row.find_all("td")
+            name = ""
+            credit = ""
+            for td in tds:
+                if not td.has_attr("class"): continue
+                if td['class'][0] == "name":
+                    name = td.text.strip()
+                if td['class'][0] == 'credit':
+                    credit = td.text.strip()
+            if name == "": continue
+            credits.append({
+                "name": name,
+                "credit": credit
             })
-        save_json(exceptions, "movie_top_casts_exceptions.json")
+        return credits
+    except Exception as e:
+        return None
+
 
 # def scrape_actor_works(actor_id_list):
 #     imdb_actor_prefix = "https://www.imdb.com/name/"
@@ -202,10 +233,9 @@ def scrape_imdb_film_cast(film_id_list):
 
 def filter_movie(movie_list):
     kept = []
-    kept_2 = []
-    kept_3 = []
-    kept_4 = []
     count = 0
+    genre_set = set()
+    filtered_genres = ['Game-Show', 'Reality-TV', '\\N']
     for movie in movie_list:
         # if movie['tconst'] == 'tt1210166':
         #     print(movie)
@@ -214,24 +244,23 @@ def filter_movie(movie_list):
         if count % 1000 == 0:
             print(count)
         year = movie['startYear']
-        time = movie['runtimeMinutes']
-        if year > "1950" and time > "60":
-            kept.append(movie)
-        if year > "1950" and time > "70":
-            kept_2.append(movie)
-        if year > "1950" and time > "80":
-            kept_3.append(movie)
-        if year > "1950" and time > "90":
-            kept_4.append(movie)
-    print(len(kept))
-    print(len(kept_2))
-    print(len(kept_3))
-    print(len(kept_4))
-    return movie
+        title = movie['titleType']
+        genres = movie['genres']
+        # filter constraints
+        if not genres: continue
+        genres = genres.split(",")
+        if year < "1950": continue
+        if title != "movie": continue
+        genre_check = [genre for genre in genres if genre in filtered_genres]
+        if genre_check: continue
+        genre_set.update(genres)
+        kept.append(movie)
+    return kept
+    # save_json(genre_dict, r"genre_dict.json")
 
 def scrape_actor_works(actor_id_list):
     from contextlib import closing
-    from selenium.webdriver import Chrome # pip install selenium
+    from selenium.webdriver import Firefox # pip install selenium
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as EC
@@ -244,15 +273,31 @@ def scrape_actor_works(actor_id_list):
         url = imdb_actor_prefix + id
         print(url)
         # use firefox to get page with javascript generated content
-        with closing(Chrome()) as driver:
+        with closing(Firefox()) as driver:
             driver.get(url)
-            filmography_container = driver.find_element("id", "filmography")
-            if not filmography_container:
-                exceptions.append({
-                    "id": id,
-                    "exception": "no filmography available"
-                })
-                continue
+            headers = driver.find_elements(By.TAG_NAME, "h3")
+            # credits = driver.find_element(By.XPATH, "//span[contains(text(), 'Credits')]")
+            credits_found = False
+            credit_span = None
+            for header in headers:
+                spans = header.find_elements(By.TAG_NAME, 'span')
+                for span in spans:
+                    if span.text == "Credits":
+                        credit_span = span
+                        credits_found = True
+                        break
+                if credits_found: break
+            if not credits_found:
+                print("credits not found")
+                return
+            print(credit_span)
+            while(True):
+                parent = credit_span.find_element(By.XPATH, "..")
+                class_list = parent.get_attribute("class")
+                print(class_list)
+                if class_list == 'ipc-page-section': break
+
+            return
             section_headers = filmography_container.find_elements("class", "head")
             click = False
             for header in section_headers:
