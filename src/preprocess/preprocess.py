@@ -4,18 +4,24 @@ from collections import defaultdict
 from pprint import pprint
 import requests
 from bs4 import BeautifulSoup
+import sys
+import datetime
 
+csv.field_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
         # movie_principals = tsv_to_dicts(r'principals.tsv') 
+        # english_movie_ids = json.load(open(r'english_movie_ids.json'))
         # actor_names = tsv_to_dicts(r'name.tsv') 
         # actor_nid_dict = {x['nconst']: x for x in actor_names}
         # movie_infos = tsv_to_dicts(r'title_basics.tsv')
+        # movie_id_dict = {x['tconst']: x for x in movie_infos}
         # print(len(movie_ids))
-        # filtered_movies = filter_movie(movie_infos)
+        # filtered_movies = filter_movie(movie_id_dict, english_movie_ids)
         # save_json(filtered_movies, r'filtered_movies.json')
-        filtered_movies = json.load(open(r'filtered_movies.json'))
+        filtered_movies = json.load(open(r'kept_movies.json'))
         movie_ids = list(map(lambda movie: movie['tconst'], filtered_movies))
+        print(len(movie_ids))
         scrape_imdb_film_credits(movie_ids)
 
 
@@ -45,26 +51,45 @@ def scrape_imdb_film_credits(film_id_list):
     imdb_full_credit_suffix = "/fullcredits"
     count = 0
     movie_credits = []
-    for id in film_id_list[:100]:
-        count += 1
-        print("{}/{}".format(count, len(film_id_list)))
+    total_time = 0
+    total_movies = len(film_id_list)
+    t_previous = datetime.datetime.now()
+    for id in film_id_list:
         url = imdb_film_prefix + id + imdb_full_credit_suffix 
         response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             cast_list = scrape_cast_list(soup)
+            poster = scrape_poster(soup)
             director_list = scrape_simpleTable(soup, "director")
             writer_list = scrape_simpleTable(soup, "writer")
             producer_list = scrape_simpleTable(soup, "producer")
 
             film_credits = {
                 "id": id,
+                "poster": poster,
                 "casts": cast_list,
                 "directors": director_list,
                 "writers": writer_list,
                 "producers": producer_list
             }
             save_json(film_credits, "film_credits/" +id+".json")
+            t_cur = datetime.datetime.now()
+            total_time += (t_cur - t_previous).microseconds 
+            t_previous = t_cur
+            count += 1
+            avg_time = total_time/count
+            estimate_left_time = avg_time*(total_movies - count)/60/1000000
+            print("{}/{}, {} minutes left".format(count, total_movies, estimate_left_time))
+
+def scrape_poster(soup):
+    try:
+        img_tag = soup.find("img", attrs={"class": "poster"})
+        img_src = img_tag.get("src")
+        return img_src
+    except Exception as e:
+        return None
+
 
 def scrape_cast_list(soup):
     try:
@@ -231,30 +256,40 @@ def scrape_simpleTable(soup, id):
 
 
 
-def filter_movie(movie_list):
+def filter_movie(movie_id_dict, english_movie_ids):
     kept = []
     count = 0
     genre_set = set()
     filtered_genres = ['Game-Show', 'Reality-TV', '\\N']
-    for movie in movie_list:
-        # if movie['tconst'] == 'tt1210166':
-        #     print(movie)
-        #     break
+    for movie_id in english_movie_ids:
         count += 1
         if count % 1000 == 0:
-            print(count)
+            print(count, "/", len(english_movie_ids))
+        if movie_id not in movie_id_dict.keys(): continue 
+        movie = movie_id_dict[movie_id]
+        if movie['tconst'] not in english_movie_ids: continue
         year = movie['startYear']
         title = movie['titleType']
+        time = movie['runtimeMinutes']
         genres = movie['genres']
         # filter constraints
         if not genres: continue
         genres = genres.split(",")
         if year < "1950": continue
         if title != "movie": continue
+        if time < "90": continue
         genre_check = [genre for genre in genres if genre in filtered_genres]
         if genre_check: continue
         genre_set.update(genres)
         kept.append(movie)
+    i = 0
+    for kept_movie in kept:
+        i += 1
+        if i % 1000 == 0:
+            print(kept_movie)
+
+    print(len(kept))
+    save_json(kept, r'kept.json')
     return kept
     # save_json(genre_dict, r"genre_dict.json")
 
