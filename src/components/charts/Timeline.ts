@@ -1,4 +1,5 @@
 import * as d3 from "d3"
+import { line } from "d3"
 
 const track_index2name = ['actor', 'director', 'writer', 'producer']
 interface Margin {
@@ -42,7 +43,7 @@ export class Timeline {
 			}
 		}
         // calculate height of the view from timeline length
-        const timeline_length = data.length
+        const timeline_length = data.reduce((total, step) => total + step.movies.length, 0)
         this.contentHeight = timeline_length * this.cfg.interval
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
@@ -91,34 +92,49 @@ export class Timeline {
         const canvas = this.svg.select("g.canvas")
 
         const xTranslate = (d) => this.cfg.xScale(track_index2name[d]) + this.cfg.xScale.bandwidth()/2 
-        // append circles
-        canvas.selectAll("circle")
+        const sections_container = canvas.append("g").attr("class", "sections-container")
+        // append sections
+        const sections = sections_container.selectAll("g")
             .data(data)
-            .join("circle")
-            .attr("class", "movie")
-            .attr("cx", d => xTranslate(d))
-            .attr("cy", (d, i) => i * this.cfg.interval)
-            .attr("r", 10)
-            .attr("fill", "black")
-            .style("cursor", "pointer")
-            .on("mouseover", function(this: any, e, d) {
-                console.log(d)
-                this.classList.add("hovered")
-                // TODO: animate hover effect in css
+            .join("g")
+            .attr("class", "step")
 
-            })
-            .on("mouseout", function(this: any, e, d) {
-                console.log(d)
-                this.classList.remove("hovered")
-            })
+        let self = this
+        let circle_index = -1
+        sections.each(function(this:any, d) {
+            console.log(d)
+            d3.select(this).selectAll("circle")
+                .data(d.movies)
+                .join("circle")
+                .attr("class", "movie")
+                .attr("cx", d => xTranslate(d))
+                .attr("cy", () => { 
+                    circle_index += 1; 
+                    return circle_index * self.cfg.interval
+                })
+                .attr("r", 10)
+                .attr("fill", "black")
+                .style("cursor", "pointer")
+                .on("mouseover", function(this: any, e, d) {
+                    console.log(d)
+                    this.classList.add("hovered")
+                    // TODO: animate hover effect in css
+
+                })
+                .on("mouseout", function(this: any, e, d) {
+                    console.log(d)
+                    this.classList.remove("hovered")
+                })
+        })
         
         // append lines
         let line_data: any[] = []
-        data.forEach((datum, index) => {
-            if(index == data.length - 1) return
+        const timeline_movies = data.reduce((movies, step) => movies.concat(step.movies), [])
+        timeline_movies.forEach((step, index) => {
+            if(index == timeline_movies.length - 1) return
             line_data.push({
-                d1: data[index],
-                d2: data[index+1],
+                d1: timeline_movies[index],
+                d2: timeline_movies[index+1],
             })
         })
 
@@ -131,6 +147,7 @@ export class Timeline {
             .attr("y1", (d, i) => i * this.cfg.interval)
             .attr("y2", (d, i) => (i+1) * this.cfg.interval)
             .attr("stroke", "black")
+            .style("pointer-events", "none")
     }
 
 }

@@ -27,14 +27,14 @@ const timeline = new Timeline(svgSelector.value, {
 
 vue.onMounted(() => {
     timeline.init(props.timeline_data)
-    // setupScroller()
+    setupScroller()
 })
 
 
 function setupScroller() {
     // setup scroll functionality
     let scroll:any = scroller.scroller()
-        .container(d3.select('#graphic'));
+        .container(d3.select('.sections-container'));
 
     // pass in .step selection as the steps
     scroll(d3.selectAll('.step'));
