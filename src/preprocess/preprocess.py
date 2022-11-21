@@ -1,3 +1,4 @@
+from ctypes import cast
 import json
 import csv
 from collections import defaultdict
@@ -6,29 +7,43 @@ import requests
 from bs4 import BeautifulSoup
 import sys
 import datetime
-
-csv.field_size_limit(sys.maxsize)
+from os import listdir
+from os.path import isfile, join
+import glob
+# csv.f_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
         # movie_principals = tsv_to_dicts(r'principals.tsv') 
         # english_movie_ids = json.load(open(r'english_movie_ids.json'))
+        # print('tt10872600' in english_movie_ids)
         # actor_names = tsv_to_dicts(r'name.tsv') 
         # actor_nid_dict = {x['nconst']: x for x in actor_names}
         # movie_infos = tsv_to_dicts(r'title_basics.tsv')
         # movie_id_dict = {x['tconst']: x for x in movie_infos}
+        # print(movie_id_dict['tt10872600'])
         # print(len(movie_ids))
         # filtered_movies = filter_movie(movie_id_dict, english_movie_ids)
         # save_json(filtered_movies, r'filtered_movies.json')
-        filtered_movies = json.load(open(r'kept_movies.json'))
-        movie_ids = list(map(lambda movie: movie['tconst'], filtered_movies))
-        print(len(movie_ids))
-        scrape_imdb_film_credits(movie_ids)
+        # kept_movies = json.load(open(r'merged_kept_movies.json'))
+            
+        # path = r'film_credits'
+        # scraped_movie_ids = [f.split(".")[0] for f in listdir(path) if isfile(join(path, f))]
+        # movie_ids = list(map(lambda movie: movie['tconst'], kept_movies))
+        # resume = list(set(movie_ids) - set(scraped_movie_ids))
+        # print(len(movie_ids))
+        # movie_ids = ['tt0800080']
+        # scrape_imdb_film_credits(resume)
+        movie_credits = []
+        for credit_file in glob.glob(r'film_credits/*.json'):
+            credits = json.load(open(credit_file))
+            movie_credits.append(credits)
 
-
-
-               
-
-
+        movie_subset_file = open(r'movie_subsets.txt')
+        subset_movie_ids = list(map(lambda id: id.strip(), movie_subset_file.readlines()))
+        actor_list = extract_actor_list_from_movie_subset(subset_movie_ids)
+        # I'm working on this now
+        actor_careers = extract_actor_career(actor_list, movie_credits)
+        
 
 def tsv_to_dicts(csvFilePath):
     #read csv file
@@ -81,6 +96,8 @@ def scrape_imdb_film_credits(film_id_list):
             avg_time = total_time/count
             estimate_left_time = avg_time*(total_movies - count)/60/1000000
             print("{}/{}, {} minutes left".format(count, total_movies, estimate_left_time))
+        else:
+            print(response)
 
 def scrape_poster(soup):
     try:
@@ -275,9 +292,9 @@ def filter_movie(movie_id_dict, english_movie_ids):
         # filter constraints
         if not genres: continue
         genres = genres.split(",")
-        if year < "1950": continue
+        if not year.isdigit() or int(year) < int("1950"): continue
         if title != "movie": continue
-        if time < "90": continue
+        if not time.isdigit() or int(time) < int("90"): continue
         genre_check = [genre for genre in genres if genre in filtered_genres]
         if genre_check: continue
         genre_set.update(genres)
@@ -292,6 +309,35 @@ def filter_movie(movie_id_dict, english_movie_ids):
     save_json(kept, r'kept.json')
     return kept
     # save_json(genre_dict, r"genre_dict.json")
+
+def extract_actor_list_from_movie_subset(movie_ids):
+    actor_set = set()
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            if not casts: continue
+            cast_ids = [cast['id'] for cast in casts]
+            actor_set.update(cast_ids)
+        except Exception as e:
+            print(e)
+            continue
+    return list(actor_set)
+
+def extract_actor_career(actor_list, movie_credits):
+    actor_career_dict = {}
+    for movie in movie_credits:
+        cast_ids = list(map(lambda cast: cast['id'], movie['casts']))
+        director_ids = list(map(lambda cast: cast['id'], movie['directors']))
+        writer_ids = list(map(lambda cast: cast['id'], movie['writers']))
+        producer_ids = list(map(lambda cast: cast['id'], movie['producers']))
+
+
+    return
+
+    
+
+
 
 def scrape_actor_works(actor_id_list):
     from contextlib import closing
@@ -355,42 +401,6 @@ def scrape_actor_works(actor_id_list):
                     film_id = row['id'].split('-')[1]
                     print(header_name, film_id)
                 return
-
-def add_artist_work_description(
-    artist_works_dict_path=r'artist_works_dict.json', 
-    artist_careers_path=r'careers/',
-    movie_titles_path=r'titles.json',
-):
-    artist_dict = json.load(open(artist_works_dict_path))
-    movie_list = json.load(open(movie_titles_path))
-    movie_dict = {movie['id']: movie for movie in movie_list}
-    count = 0
-
-    artist_works_w_description_dict = defaultdict(list)
-    for artist_id, works in artist_dict.items(): 
-        count += 1
-        artist_career_filepath = artist_careers_path + artist_id + "_career.json"
-        try:
-            career = json.load(open(artist_career_filepath))
-        except:
-            continue
-        artist_works_w_description_dict[artist_id] = works
-        for work in works:
-            movie_id = work["id"]
-            movie_title = movie_dict[movie_id]['title']
-            work['wiki_description'] = []
-            for section in career['career']:
-                header = section['header']
-                paragraphs = []
-                for p, content in section.items():
-                    if p == "header": continue
-                    if movie_title.lower() in content.lower(): # alternative: only store sentences, not entire paragraph
-                        paragraphs.append(content) 
-                if len(paragraphs) != 0:
-                    work['wiki_description'].append({"header": header, "paragraphs": paragraphs})
-        print(artist_id, "{}/{}".format(count, len(artist_dict.keys())))
-    
-    save_json(artist_works_w_description_dict, r'artist_works_w_description.json')
 
 main()
 
