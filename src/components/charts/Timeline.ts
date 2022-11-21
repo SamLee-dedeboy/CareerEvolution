@@ -24,6 +24,7 @@ export class Timeline {
     contentHeight: number;
     cfg: TimelineConfig;
     options: any;
+    data: any;
 
     public constructor(svgSelector, options) {
         this.svgSelector = svgSelector 
@@ -35,6 +36,7 @@ export class Timeline {
     }
 
     init(data) {
+        this.data = data
         this.svg = d3.select(this.svgSelector)
         // setup configs
         if('undefined' !== typeof this.options){
@@ -67,7 +69,20 @@ export class Timeline {
     }
 
     activate(index) {
-
+        const active_movies = this.data[index].movies
+        let index_in_timeline = 0
+        this.data.forEach((section, section_index) => {
+            if(section_index >= index) return
+            index_in_timeline += section.movies.length
+        })
+        const lines = this.svg.selectAll("line.connection")
+            .each(function(this: any, d, i) {
+                if(i >= index_in_timeline && i < index_in_timeline + active_movies.length - 1) {
+                    d3.select(this).attr("opacity", 1)
+                } else {
+                    d3.select(this).attr("opacity", 0)
+                }
+            })
     }
 
     update(index, progress) {
