@@ -33,8 +33,9 @@ def main():
         # print(len(movie_ids))
         # movie_ids = ['tt0800080']
         # scrape_imdb_film_credits(resume)
+
         movie_credits = []
-        for credit_file in glob.glob(r'film_credits/*.json'):
+        for credit_file in glob.glob(r'film_credits_w_ids/*.json'):
             credits = json.load(open(credit_file))
             movie_credits.append(credits)
 
@@ -326,14 +327,43 @@ def extract_actor_list_from_movie_subset(movie_ids):
 
 def extract_actor_career(actor_list, movie_credits):
     actor_career_dict = {}
+    progress = 0
     for movie in movie_credits:
-        cast_ids = list(map(lambda cast: cast['id'], movie['casts']))
-        director_ids = list(map(lambda cast: cast['id'], movie['directors']))
-        writer_ids = list(map(lambda cast: cast['id'], movie['writers']))
-        producer_ids = list(map(lambda cast: cast['id'], movie['producers']))
+        print(movie['id'])
+        if movie['casts']:
+            movie['casts'] = filter(lambda cast: 'id' in cast, movie['casts'])
+            cast_ids = list(map(lambda cast: cast['id'], movie['casts']))
+            check_credit(actor_list, cast_ids, "actor", actor_career_dict, movie['id'])
+        if movie['directors']:
+            movie['directors'] = filter(lambda director: 'id' in director, movie['directors'])
+            director_ids = list(map(lambda director: director['id'], movie['directors']))
+            check_credit(actor_list, director_ids, "director", actor_career_dict, movie['id'])
+        if movie['writers']:
+            movie['writers'] = filter(lambda writer: 'id' in writer, movie['writers'])
+            writer_ids = list(map(lambda writer: writer['id'], movie['writers']))
+            check_credit(actor_list, writer_ids, "writer", actor_career_dict, movie['id'])
+        if movie['producers']:
+            movie['producers'] = filter(lambda producer: 'id' in producer, movie['producers'])
+            producer_ids = list(map(lambda producer: producer['id'], movie['producers']))
+            check_credit(actor_list, producer_ids, "producer", actor_career_dict, movie['id'])
+        progress += 1
+        print("{}/{}".format(progress, len(movie_credits)))
+    for actor_id, career in actor_career_dict.items():
+        career['id'] = actor_id
+        save_json(career, "careers/" + actor_id + ".json")
 
+def check_credit(actor_list, checked_list, idf, actor_career_dict, movie_id):
+    for actor_id in checked_list:
+        if actor_id in actor_list:
+            if actor_id not in actor_career_dict.keys():
+                actor_career_dict[actor_id] = {
+                    "actor": [],
+                    "director": [],
+                    "writer": [],
+                    "producer": [],
+                }
+            actor_career_dict[actor_id][idf].append(movie_id)
 
-    return
 
     
 
@@ -401,6 +431,35 @@ def scrape_actor_works(actor_id_list):
                     film_id = row['id'].split('-')[1]
                     print(header_name, film_id)
                 return
+
+def add_simple_table_ids():
+    names = tsv_to_dicts(r'name.tsv') 
+    print("constructing dict...")
+    name_id_dict = {name['primaryName']: name['nconst'] for name in names}
+    print("construct dict done")
+    movie_credits = []
+    for credit_file in glob.glob(r'film_credits/*.json'):
+        credits = json.load(open(credit_file))
+        movie_credits.append(credits)
+    
+    for movie in movie_credits:
+        if movie['directors']:
+            for director in movie['directors']:
+                if director['name'] in name_id_dict:
+                    id = name_id_dict[director['name']]
+                    director['id'] = id
+        if movie['writers']:
+            for writer in movie['writers']:
+                if writer['name'] in name_id_dict:
+                    id = name_id_dict[writer['name']]
+                    writer['id'] = id
+        if movie['producers']:
+            for producer in movie['producers']:
+                if producer['name'] in name_id_dict:
+                    id = name_id_dict[producer['name']]
+                    producer['id'] = id
+
+        save_json(movie, 'film_credits_w_ids/' + movie['id'] + ".json")
 
 main()
 
