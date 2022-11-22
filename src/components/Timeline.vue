@@ -1,5 +1,12 @@
 <template>
     <div class="timeline-container">
+        <div class="description-container">
+            <div v-for="(section, index) in section_desciptions" :id="'section_'+index" class="section">
+                <h4 class='section-header'> {{ section.header }} </h4>
+                <div class='section-description'> {{ section.description }} </div>
+            </div>
+
+        </div>
         <svg :class="svgClass"></svg>
     </div>
 </template>
@@ -12,6 +19,7 @@ import scroller from "./scroller"
 
 const props = defineProps({
     timeline_data: Object as () => any,
+    section_desciptions: Object as () => any[],
 })
 const svgClass = "timeline-svg"
 const svgSelector = vue.computed(() => `.${svgClass}`)
@@ -56,3 +64,12 @@ function setupScroller() {
 }
 
 </script>
+
+<style scoped>
+.timeline-container {
+    display: flex;
+}
+:deep(.active) {
+    position: fixed;
+}
+</style>

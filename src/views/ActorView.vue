@@ -1,6 +1,6 @@
 <template>
     <div class="actor-view-container">
-        <Timeline :timeline_data="test_data"></Timeline>
+        <Timeline :timeline_data="test_data" :section_desciptions="test_descriptions"></Timeline>
     </div>
 </template>
 
@@ -23,6 +23,21 @@ const test_data = [
     { // section
         header: "stage 3",
         movies: [3, 3, 3, 3],
+    },
+]
+
+const test_descriptions = [
+    {
+        header: "Early Stage",
+        description: "At his early stage of career, he was someweqewqewqewqewqewqewqewqewq"
+    },
+    {
+        header: "Middle Stage",
+        description: "At his middle stage of career, he was someweqewqewqewqewqewqewqewqewq"
+    },
+    {
+        header: "Late Stage",
+        description: "At his late stage of career, he was someweqewqewqewqewqewqewqewqewq"
     },
 ]
 

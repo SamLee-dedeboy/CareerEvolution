@@ -11,8 +11,8 @@ interface Margin {
 export class TimelineConfig {
     width: number = 600  
 	height: number = 600
-	margin: Margin = {top: window.innerHeight/3, right: 20, bottom: window.innerHeight/3, left: 20}
-    interval: number = 100
+	margin: Margin = {top: 20, right: 20, bottom: 20, left: 20}
+    interval: number = 230
     xScale: any;
     tracks: any;
 }
@@ -25,6 +25,7 @@ export class Timeline {
     cfg: TimelineConfig;
     options: any;
     data: any;
+    timeline_margin_top: number;
 
     public constructor(svgSelector, options) {
         this.svgSelector = svgSelector 
@@ -33,6 +34,7 @@ export class Timeline {
         this.svgWidth = this.cfg.width
         this.svgHeight = this.cfg.height
         this.contentHeight = this.cfg.height
+        this.timeline_margin_top = 100
     }
 
     init(data) {
@@ -69,6 +71,15 @@ export class Timeline {
     }
 
     activate(index) {
+        const active_stage_index = 0
+        const text_sections = d3.selectAll(".section")
+            .each(function(this: any) {
+                if(d3.select(this).attr("id").split("_")[1] == index) {
+                    this.classList.add("active")
+                } else {
+                    this.classList.remove("active")
+                }
+            })
         return
         const active_movies = this.data[index].movies
         let index_in_timeline = 0
@@ -114,6 +125,7 @@ export class Timeline {
             .data(data)
             .join("g")
             .attr("class", "stage")
+            .attr("id", (d, i) => `stage_${i}`)
 
         let self = this
         let circle_index = -1
@@ -126,7 +138,7 @@ export class Timeline {
                 .attr("cx", d => xTranslate(d))
                 .attr("cy", () => { 
                     circle_index += 1; 
-                    return circle_index * self.cfg.interval
+                    return self.timeline_margin_top + circle_index * self.cfg.interval
                 })
                 .attr("r", 10)
                 .attr("fill", "black")
@@ -160,8 +172,8 @@ export class Timeline {
             .attr("class", "connection")
             .attr("x1", d => xTranslate(d.d1))
             .attr("x2", d => xTranslate(d.d2))
-            .attr("y1", (d, i) => i * this.cfg.interval)
-            .attr("y2", (d, i) => (i+1) * this.cfg.interval)
+            .attr("y1", (d, i) => this.timeline_margin_top + i * this.cfg.interval)
+            .attr("y2", (d, i) => this.timeline_margin_top + (i+1) * this.cfg.interval)
             .attr("stroke", "black")
             .style("pointer-events", "none")
     }
