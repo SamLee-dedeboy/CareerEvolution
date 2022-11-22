@@ -11,7 +11,7 @@ interface Margin {
 export class TimelineConfig {
     width: number = 600  
 	height: number = 600
-	margin: Margin = {top: 20, right: 20, bottom: 20, left: 20}
+	margin: Margin = {top: window.innerHeight/3, right: 20, bottom: window.innerHeight/3, left: 20}
     interval: number = 100
     xScale: any;
     tracks: any;
@@ -69,6 +69,7 @@ export class Timeline {
     }
 
     activate(index) {
+        return
         const active_movies = this.data[index].movies
         let index_in_timeline = 0
         this.data.forEach((section, section_index) => {
@@ -112,7 +113,7 @@ export class Timeline {
         const sections = sections_container.selectAll("g")
             .data(data)
             .join("g")
-            .attr("class", "step")
+            .attr("class", "stage")
 
         let self = this
         let circle_index = -1
@@ -121,7 +122,7 @@ export class Timeline {
             d3.select(this).selectAll("circle")
                 .data(d.movies)
                 .join("circle")
-                .attr("class", "movie")
+                .attr("class", "step")
                 .attr("cx", d => xTranslate(d))
                 .attr("cy", () => { 
                     circle_index += 1; 
