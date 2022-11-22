@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import sys
 import datetime
+import os
 from os import listdir
 from os.path import isfile, join
 import glob
@@ -45,7 +46,8 @@ def main():
         # actor_careers = extract_actor_career(actor_list, movie_credits)
         # actor_info_list = json.load(open(r'target_actor_info.json'))
         # scrape_career(actor_list=actor_info_list)
-        generate_movie_pool()
+        # generate_movie_pool()
+        add_snippets()
         
 
 def tsv_to_dicts(csvFilePath):
@@ -606,12 +608,57 @@ def generate_movie_pool():
     save_json(movie_info_dict, r'movie_pool.json')
 
 def add_snippets():
+    movie_pool = json.load(open(r'movie_pool.json'))
+    res = {}
     for actor_career_file in glob.glob(r'careers/*.json'):
+        actor_id = os.path.basename(actor_career_file).split(".")[0]
+        try:
+            snippets = json.load(open("career_snippets/" + actor_id + ".json"))
+        except:
+            continue
         career = json.load(open(actor_career_file))
         asActor = career['actor']
         asDirector = career['director']
         asWriter = career['writer']
         asProducer = career['producer']
+        actor_career_dict = defaultdict(list)
+        merge_movie_roles(actor_career_dict, asActor, "actor")
+        merge_movie_roles(actor_career_dict, asDirector, "director")
+        merge_movie_roles(actor_career_dict, asWriter, "writer")
+        merge_movie_roles(actor_career_dict, asProducer, "producer")
+
+        res[actor_id] = generate_movie_info_w_snippet(snippets, actor_career_dict, movie_pool)
+    save_json(res, r'career_w_snippets.json')
+
+def merge_movie_roles(actor_career_dict, movie_ids, idf):
+    for movie_id in movie_ids:
+        actor_career_dict[movie_id].append(idf)
+
+
+def generate_movie_info_w_snippet(actor_snippets, actor_career_dict, movie_pool_dict):
+    actor_id = actor_snippets['id']
+    actor_name = actor_snippets['name']
+    movie_infos = []
+    movie_ids = list(actor_career_dict.keys())
+    for movie_id in movie_ids:
+        if movie_id not in movie_pool_dict: continue
+        movie_info = {
+            "tid": movie_id,
+            "role": actor_career_dict[movie_id],
+            "wiki_description": [],
+        }
+        movie_title = movie_pool_dict[movie_id]['title']
+        for section in actor_snippets['career']:
+            header = section['header']
+            paragraphs = []
+            for p, content in section.items():
+                if p == "header": continue
+                if movie_title.lower() in content.lower(): # alternative: only store sentences, not entire paragraph
+                    paragraphs.append(content) 
+            if len(paragraphs) != 0:
+                movie_info['wiki_description'].append({"header": header, "paragraphs": paragraphs})
+            movie_infos.append(movie_info)
+    return movie_infos
 
 main()
 
