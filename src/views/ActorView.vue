@@ -1,6 +1,6 @@
 <template>
     <div class="actor-view-container">
-        <Timeline :timeline_data="target_artist_career_data" :section_desciptions="test_descriptions"></Timeline>
+        <Timeline :timeline_data="target_artist_career" :section_desciptions="test_descriptions"></Timeline>
     </div>
 </template>
 
@@ -26,7 +26,6 @@ async function get_career(artist) {
         .then(json => {
             target_artist_career.value = json
             console.log("career fetched", json)
-            target_artist_career_data.value = preprocess_career(target_artist_career.value)
         })
 }
 
@@ -37,30 +36,6 @@ async function get_artists() {
             artists.value = json
             console.log("artists fetched", json)
         })
-}
-
-// TODO: this should be done in back end 
-function preprocess_career(career) {
-    // sort movies by year
-    career.sort((m1, m2) => +m1.year - +m2.year)
-    console.log(career)
-    let test_generated_data: any[] = []
-    let cur_stage_movies: any[] = []
-    let stage_count = 1
-    career.forEach(movie => {
-        cur_stage_movies.push(movie)
-        if(movie.snippet.length != 0) {
-            test_generated_data.push({
-                header: `stage ${stage_count}`,
-                movies: JSON.parse(JSON.stringify(cur_stage_movies))
-            })
-            cur_stage_movies = []
-            stage_count += 1
-            // TODO: add stage description
-        }
-    });
-    console.log(test_generated_data)
-    return test_generated_data
 }
 
 const test_data = [

@@ -168,7 +168,6 @@ export class Timeline {
                     return self.timeline_margin_top + title_index * self.cfg.interval
                 })
                 .text((movie_data: any) => {
-                    console.log(movie_data.title)
                     return movie_data.title
                 })
                 .call(wrap, self.cfg.xScale.bandwidth()/2)
@@ -183,7 +182,8 @@ export class Timeline {
                     return self.timeline_margin_top + snippet_index * self.cfg.interval
                 })
                 .text((movie_data: any) => {
-                    return movie_data.snippet?.[0]?.paragraphs[0] || ""
+                    if(movie_data.snippet.length == 0) return ""
+                    return movie_data.snippet.map(snippet => snippet.snippet).join("\n")
                 })
                 .call(wrap, 700)
         })
