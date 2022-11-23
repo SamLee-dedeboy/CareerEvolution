@@ -1,32 +1,38 @@
 <template>
     <div class="overview-container">
-        <p>Home view</p>
+        <LineChart v-if="dataExists" :myData="mySubset"></LineChart>
     </div>
 </template>
-<script setup lang="ts">
-import { useStore } from 'vuex'
-import * as vue from "vue"
-const store = useStore()
 
-// test store
-const test_store = vue.computed(() => store.state.test)
-console.log(test_store.value)
+<script>
+import * as d3 from "d3";
+import LineChart from '../components/line_chart.vue';
+import testData from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
 
-// test backend request
-const server_address = vue.inject("server_address")
-await fetch(`${server_address}/data/artists`, 
-    // {
-    //     method: "POST",
-    //     headers: {
-    //         "Accept": "application/json",
-    //         "Content-Type": "application/json"
-    //     },
-    // }
-    )
-    .then(res => res.json())
-    .then(json => {
-        console.log(json)
-    })
-
-
+export default {
+    data(){
+        return {
+            dataExists: true,
+            mySubset: undefined,
+        }
+    },
+    components: {
+        LineChart,
+    },
+    created(){
+        /* Fetch via CSV */
+        this.drawFromJson()
+    },
+    mounted(){},
+    methods: {
+        drawFromJson(){
+            console.log("In overview: ", testData);
+            this.mySubset = testData;
+        },
+    }
+}
 </script>
+
+<style>
+    
+</style>

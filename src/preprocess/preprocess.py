@@ -93,6 +93,7 @@ def save_movie_subset():
             continue
     # print(HP_tmp)
 
+    avg_rank = 40
     for movie_id in movie_ids:
         try:
             credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
@@ -106,7 +107,7 @@ def save_movie_subset():
                 try:
                     cast = HP_tmp[cast_key]
                     if cast['count'] < len(movie_ids)-2:  continue
-                    if cast['rank_accu']/cast['count'] > 40:  continue
+                    if cast['rank_accu']/cast['count'] > avg_rank:  continue
                     if cast['id'] in HP.keys(): continue
                     cast_id = cast['id']
                     HP[cast_id] = {}
@@ -202,12 +203,14 @@ def save_movie_subset():
     delete_list = []
     keep_list = []
     for ppl in HP.keys():
-        HP[ppl]['rate'] = np.zeros((year_end - year_start + 1))
-        HP[ppl]['vote'] = np.zeros((year_end - year_start + 1))
+        # HP[ppl]['rate'] = np.zeros((year_end - year_start + 1))
+        # HP[ppl]['vote'] = np.zeros((year_end - year_start + 1))
         HP[ppl]['movie_count'] = np.zeros((year_end - year_start + 1))
         HP[ppl]['popularity'] = np.zeros((year_end - year_start + 1))
         HP[ppl]['popularity_max'] = np.zeros((year_end - year_start + 1))
         HP[ppl]['pop_bin'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_name'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_name'] = list(HP[ppl]['movie_name'])
         ppl_movies = []
         actor_movie_list = {}
         try:
@@ -227,11 +230,13 @@ def save_movie_subset():
                     # HP[ppl]['vote'][movie_basics[movie][1] - year_start] += movie_ratings[movie][1]
                     popular = movie_ratings[movie][0]*movie_ratings[movie][1]
                     year_idx = movie_basics[movie][1] - year_start
+                    m_name = movie_basics[movie][0]
                     # print(pop_min, pop_max, popular, year_idx, HP[ppl]['popularity_max'])
 
                     HP[ppl]['popularity'][year_idx] += popular
                     if popular > HP[ppl]['popularity_max'][year_idx]:
                         HP[ppl]['popularity_max'][year_idx] = popular
+                        HP[ppl]['movie_name'][year_idx] = m_name
                     HP[ppl]['movie_count'][year_idx] += 1
                     HP[ppl]['pop_bin'][year_idx] = HP[ppl]['popularity_max'][year_idx]
                     # HP[ppl]['pop_bin'][movie_basics[movie][1] - year_start] = float(HP[ppl]['popularity'][movie_basics[movie][1] - year_start]/HP[ppl]['movie_count'][movie_basics[movie][1] - year_start])
@@ -243,6 +248,8 @@ def save_movie_subset():
             for tmp in range(year_end - year_start + 1):
                 if HP[ppl]['movie_count'][tmp]!=0:
                     keep_list.append(HP[ppl]['pop_bin'][tmp])
+            
+
         # if max(HP[ppl]['pop_bin']) > pop_max: 
         #     pop_max = max(HP[ppl]['pop_bin'])
         #     print("pop_max: ", pop_max)
@@ -266,11 +273,20 @@ def save_movie_subset():
                     HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['pop_bin'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
                 else:
                     HP[ppl]['pop_bin'][pop_idx] = HP[ppl]['pop_bin'][pop_idx-1]
-            print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
+            
+            HP[ppl]['movie_count'] = list(HP[ppl]['movie_count'])
+            HP[ppl]['popularity'] = list(HP[ppl]['popularity'])
+            HP[ppl]['popularity_max'] = list(HP[ppl]['popularity_max'])
+            HP[ppl]['pop_bin'] = list(HP[ppl]['pop_bin'])
+
+            # print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
         except Exception as e:
             print(e)
             continue
-    # print(HP)
+    print(len(HP.keys()), HP)
+
+    with open('HP_{}.json'.format(avg_rank), 'w') as f:
+        json.dump(HP, f)
 
     return
 
