@@ -11,6 +11,7 @@ from os import listdir
 from os.path import isfile, join
 import glob
 import pandas
+import numpy as np
 # csv.f_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
@@ -171,13 +172,78 @@ def save_movie_subset():
             continue
     # print(len(HP.keys()), HP)
 
+    # read title_ratings(get rating & popularity), title_basics(get movie name & year)
+    movie_ratings = {}
+    with open("imdb/title_ratings.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        line_count = 0
+        for line in tsv_file:
+            if line_count==0: 
+                line_count += 1
+                continue
+            movie_ratings[line[0]] = [float(line[1]), float(line[2])] # rating, vote
+    # print(movie_ratings)
+    movie_basics = {}
+    with open("imdb/title_basics.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        line_count = 0
+        for line in tsv_file:
+            if line_count==0: 
+                line_count += 1
+                continue
+            if line[1] != "movie": continue
+            if line[5] == '\\N': continue
+            movie_basics[line[0]] = [line[3], int(line[5])] # name, year     
+    # print(movie_basics)
+
+    print(HP)
+    pop_min = 100000
+    pop_max = 0
+    delete_list = []
+    for ppl in HP.keys():
+        HP[ppl]['rate'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['vote'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_count'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['popularity'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['pop_bin'] = np.zeros((year_end - year_start + 1))
+        ppl_movies = []
+        actor_movie_list = {}
+        try:
+            actor_movie_list = json.load(open('actor_careers/{}.json'.format(ppl)))
+        except Exception as e:
+            print(e)
+            delete_list.append(ppl)
+            continue
+
+        print(ppl)
+        for role in actor_movie_list.keys():
+            if role == "id": continue
+            for movie in actor_movie_list[role]:
+                ppl_movies.append(movie)
+                if movie_basics[movie][1] <= year_end and movie_basics[movie][1] >= year_start:
+                    # HP[ppl]['rate'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0]
+                    # HP[ppl]['vote'][movie_basics[movie][1] - year_start] += movie_ratings[movie][1]
+                    HP[ppl]['popularity'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0] * movie_ratings[movie][1]
+                    HP[ppl]['movie_count'][movie_basics[movie][1] - year_start] += 1
+                    if movie_ratings[movie][0] * movie_ratings[movie][1] > pop_max: pop_max = movie_ratings[movie][0] * movie_ratings[movie][1]
+                    if movie_ratings[movie][0] * movie_ratings[movie][1] < pop_min: pop_min = movie_ratings[movie][0] * movie_ratings[movie][1]
+                    
+    for ppl in delete_list:
+        HP.pop(ppl, None)
+
     for ppl in HP.keys():
         try:
-            actor_movie_list = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
-
+            # print(HP[ppl]['popularity'], HP[ppl]['movie_count'], pop_min, pop_max)
+            for pop_idx in range(year_end - year_start + 1):
+                if HP[ppl]['movie_count'][pop_idx] != 0:
+                    HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['popularity'][pop_idx]/HP[ppl]['movie_count'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
+                else:
+                    HP[ppl]['pop_bin'][pop_idx] = HP[ppl]['pop_bin'][pop_idx-1]
+            print(ppl, HP[ppl]['name'], HP[ppl]['popularity'], HP[ppl]['pop_bin'])
         except Exception as e:
             print(e)
             continue
+    # print(HP)
 
     return
 
