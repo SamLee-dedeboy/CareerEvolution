@@ -657,7 +657,7 @@ def generate_movie_info_w_snippet(actor_snippets, actor_career_dict, movie_pool_
                     paragraphs.append(content) 
             if len(paragraphs) != 0:
                 movie_info['wiki_description'].append({"header": header, "paragraphs": paragraphs})
-            movie_infos.append(movie_info)
+        movie_infos.append(movie_info)
     return movie_infos
 
 main()
