@@ -19,6 +19,7 @@ class DataManager():
             movie_info = self.get_movie_info(movie_id)
             movie_infos.append({
                 "id": movie_id,
+                "title": movie_info['title'],
                 "votes": movie_info['votes'],
                 "rating": movie_info['ratings'],
                 "genre": movie_info['genre'],
