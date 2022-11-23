@@ -106,7 +106,7 @@ def save_movie_subset():
                 try:
                     cast = HP_tmp[cast_key]
                     if cast['count'] < len(movie_ids)-2:  continue
-                    if cast['rank_accu']/cast['count'] > 35:  continue
+                    if cast['rank_accu']/cast['count'] > 40:  continue
                     if cast['id'] in HP.keys(): continue
                     cast_id = cast['id']
                     HP[cast_id] = {}
@@ -197,7 +197,7 @@ def save_movie_subset():
     # print(movie_basics)
 
     print(HP)
-    pop_min = 100000
+    pop_min = 1000000000000000
     pop_max = 0
     delete_list = []
     for ppl in HP.keys():
@@ -223,23 +223,33 @@ def save_movie_subset():
                 if movie_basics[movie][1] <= year_end and movie_basics[movie][1] >= year_start:
                     # HP[ppl]['rate'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0]
                     # HP[ppl]['vote'][movie_basics[movie][1] - year_start] += movie_ratings[movie][1]
-                    HP[ppl]['popularity'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0] * movie_ratings[movie][1]
+                    HP[ppl]['popularity'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0]*movie_ratings[movie][1]
                     HP[ppl]['movie_count'][movie_basics[movie][1] - year_start] += 1
-                    if movie_ratings[movie][0] * movie_ratings[movie][1] > pop_max: pop_max = movie_ratings[movie][0] * movie_ratings[movie][1]
-                    if movie_ratings[movie][0] * movie_ratings[movie][1] < pop_min: pop_min = movie_ratings[movie][0] * movie_ratings[movie][1]
-                    
+                    HP[ppl]['pop_bin'][movie_basics[movie][1] - year_start] = float(HP[ppl]['popularity'][movie_basics[movie][1] - year_start]/HP[ppl]['movie_count'][movie_basics[movie][1] - year_start])
+                    # print(HP[ppl]['pop_bin'][movie_basics[movie][1] - year_start])
+        
+        if max(HP[ppl]['pop_bin']) > pop_max: 
+            pop_max = max(HP[ppl]['pop_bin'])
+            print("pop_max: ", pop_max)
+        if min(HP[ppl]['pop_bin']) < pop_min: 
+            pop_min = min(HP[ppl]['pop_bin'])
+            print("pop_min: ", pop_min)
+        if HP[ppl]['movie_count'][0] == 0:
+            delete_list.append(ppl)
+
     for ppl in delete_list:
         HP.pop(ppl, None)
 
     for ppl in HP.keys():
         try:
+            # print(ppl, HP[ppl]['name'], HP[ppl]['popularity'], HP[ppl]['pop_bin'])
             # print(HP[ppl]['popularity'], HP[ppl]['movie_count'], pop_min, pop_max)
             for pop_idx in range(year_end - year_start + 1):
                 if HP[ppl]['movie_count'][pop_idx] != 0:
-                    HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['popularity'][pop_idx]/HP[ppl]['movie_count'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
+                    HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['pop_bin'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
                 else:
                     HP[ppl]['pop_bin'][pop_idx] = HP[ppl]['pop_bin'][pop_idx-1]
-            print(ppl, HP[ppl]['name'], HP[ppl]['popularity'], HP[ppl]['pop_bin'])
+            print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
         except Exception as e:
             print(e)
             continue
