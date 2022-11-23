@@ -1,6 +1,6 @@
 <template>
-    <div class="homeview-container">
-        <p> Home view</p>
+    <div class="overview-container">
+        <p>Home view</p>
     </div>
 </template>
 <script setup lang="ts">

@@ -10,6 +10,7 @@ import datetime
 from os import listdir
 from os.path import isfile, join
 import glob
+import pandas
 # csv.f_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
@@ -33,17 +34,166 @@ def main():
         # print(len(movie_ids))
         # movie_ids = ['tt0800080']
         # scrape_imdb_film_credits(resume)
-        movie_credits = []
-        for credit_file in glob.glob(r'film_credits/*.json'):
-            credits = json.load(open(credit_file))
-            movie_credits.append(credits)
+        # movie_credits = []
+        # for credit_file in glob.glob(r'film_credits/*.json'):
+        #     credits = json.load(open(credit_file))
+        #     movie_credits.append(credits)
 
-        movie_subset_file = open(r'movie_subsets.txt')
-        subset_movie_ids = list(map(lambda id: id.strip(), movie_subset_file.readlines()))
-        actor_list = extract_actor_list_from_movie_subset(subset_movie_ids)
+        # movie_subset_file = open(r'movie_subsets.txt')
+        # subset_movie_ids = list(map(lambda id: id.strip(), movie_subset_file.readlines()))
+        # actor_list = extract_actor_list_from_movie_subset(subset_movie_ids)
+        save_movie_subset()
+        # print(actor_list)
+        # extract_actor_name("tttes")
         # I'm working on this now
-        actor_careers = extract_actor_career(actor_list, movie_credits)
+        # actor_careers = extract_actor_career(actor_list, movie_credits)
         
+
+def extract_actor_name(name_ids):
+    with open("imdb/name_basics.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        for line in tsv_file:
+            print(line)
+
+def save_movie_subset():
+    HP = {}
+    HP_tmp = {}
+    # HP
+    movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    year_start = 2001
+    year_end = 2011
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            if (not casts): continue
+            # get overall highest rank.
+            for cast in casts:
+                try:
+                    # if cast['rank'] > 5:  break
+                    if cast['id'] in HP_tmp.keys(): 
+                        HP_tmp[cast['id']]['rank_accu'] += cast['rank']
+                        HP_tmp[cast['id']]['count'] += 1
+                    else:
+                        # cast_id = cast['id']
+                        HP_tmp[cast['id']] = {}
+                        HP_tmp[cast['id']]['id'] = cast['id']
+                        HP_tmp[cast['id']]['name'] = cast['name']
+                        HP_tmp[cast['id']]['rank_accu'] = cast['rank']
+                        HP_tmp[cast['id']]['count'] = 1
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            # print(HP_tmp)
+
+        except Exception as e:
+            print(e)
+            continue
+    # print(HP_tmp)
+
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            directors = credits['directors']
+            writers = credits['writers']
+            producers = credits['producers']
+            if (not casts) and (not directors) and (not writers) and (not producers): continue
+
+            for cast_key in HP_tmp:
+                try:
+                    cast = HP_tmp[cast_key]
+                    if cast['count'] < len(movie_ids)-2:  continue
+                    if cast['rank_accu']/cast['count'] > 35:  continue
+                    if cast['id'] in HP.keys(): continue
+                    cast_id = cast['id']
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "actor"
+                    # print(cast['rank_accu']/cast['count'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+
+            # for cast in casts:
+            #     try:
+            #         if cast['rank'] > 5:  break
+            #         if cast['id'] in HP.keys(): continue
+            #         cast_id = cast['id']
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         print(cast['rank'], cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            for cast in directors:
+                try:
+                    if cast['id'] in HP.keys(): continue
+                    cast_id = cast['id']
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "director"
+                    # print("director: ", cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            for cast in writers:
+                try:
+                    if cast['id'] in HP.keys(): continue
+                    cast_id = cast['id']
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "writer"
+                    # print("writer: ", cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            for cast in producers:
+                try:
+                    if cast['id'] in HP.keys(): continue
+                    if cast['credit'].split(' ')[0] != "producer":  continue
+                    cast_id = cast['id']
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "producer"
+                    # print(cast['credit'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+        except Exception as e:
+            print(e)
+            continue
+    # print(len(HP.keys()), HP)
+
+    for ppl in HP.keys():
+        try:
+            actor_movie_list = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+
+        except Exception as e:
+            print(e)
+            continue
+
+    return
+
+def extract_actor_list_from_movie_subset(movie_ids):
+    actor_set = set()
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            if not casts: continue
+            cast_ids = [cast['id'] for cast in casts]
+            actor_set.update(cast_ids)
+        except Exception as e:
+            print(e)
+            continue
+    return list(actor_set)
 
 def tsv_to_dicts(csvFilePath):
     #read csv file
@@ -309,20 +459,6 @@ def filter_movie(movie_id_dict, english_movie_ids):
     save_json(kept, r'kept.json')
     return kept
     # save_json(genre_dict, r"genre_dict.json")
-
-def extract_actor_list_from_movie_subset(movie_ids):
-    actor_set = set()
-    for movie_id in movie_ids:
-        try:
-            credits = json.load(open('film_credits/{}.json'.format(movie_id)))
-            casts = credits['casts']
-            if not casts: continue
-            cast_ids = [cast['id'] for cast in casts]
-            actor_set.update(cast_ids)
-        except Exception as e:
-            print(e)
-            continue
-    return list(actor_set)
 
 def extract_actor_career(actor_list, movie_credits):
     actor_career_dict = {}
