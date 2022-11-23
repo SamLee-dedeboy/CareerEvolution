@@ -71,10 +71,10 @@ export class Timeline {
     }
 
     activate(index) {
-        const active_stage_index = 0
+        const active_stage_index: number = this.getSectionIndex(index)
         const text_sections = d3.selectAll(".section")
             .each(function(this: any) {
-                if(d3.select(this).attr("id").split("_")[1] == index) {
+                if(+d3.select(this).attr("id").split("_")[1] == active_stage_index) {
                     this.classList.add("active")
                 } else {
                     this.classList.remove("active")
@@ -118,7 +118,8 @@ export class Timeline {
     setupTimeline(data) {
         const canvas = this.svg.select("g.canvas")
 
-        const xTranslate = (d) => this.cfg.xScale(track_index2name[d]) + this.cfg.xScale.bandwidth()/2 
+        // TODO: fix multiple roles
+        const xTranslate = (d) => this.cfg.xScale(d.role[0]) + this.cfg.xScale.bandwidth()/2 
         const sections_container = canvas.append("g").attr("class", "sections-container")
         // append sections
         const sections = sections_container.selectAll("g")
@@ -130,7 +131,6 @@ export class Timeline {
         let self = this
         let circle_index = -1
         sections.each(function(this:any, d) {
-            console.log(d)
             d3.select(this).selectAll("circle")
                 .data(d.movies)
                 .join("circle")
@@ -144,7 +144,6 @@ export class Timeline {
                 .attr("fill", "black")
                 .style("cursor", "pointer")
                 .on("mouseover", function(this: any, e, d) {
-                    console.log(d)
                     this.classList.add("hovered")
                     // TODO: animate hover effect in css
 
@@ -154,6 +153,41 @@ export class Timeline {
                     this.classList.remove("hovered")
                 })
         })
+        // append lables
+        let title_index = -1
+        let snippet_index = -1
+        sections.each(function(this:any, d) {
+            // titles
+            d3.select(this).selectAll("text.titles")
+                .data(d.movies)
+                .join("text")
+                .attr("class", "titles")
+                .attr("x", (d: any) => self.getTitlePosition(d.role))
+                .attr("y", () => { 
+                    title_index += 1; 
+                    return self.timeline_margin_top + title_index * self.cfg.interval
+                })
+                .text((movie_data: any) => {
+                    console.log(movie_data.title)
+                    return movie_data.title
+                })
+                .call(wrap, self.cfg.xScale.bandwidth()/2)
+            // snippets
+            d3.select(this).selectAll("text.snippets")
+                .data(d.movies)
+                .join("text")
+                .attr("class", "snippets")
+                .attr("x", (d: any) => self.getSnippetPosition(d.role) + 30)
+                .attr("y", () => { 
+                    snippet_index += 1; 
+                    return self.timeline_margin_top + snippet_index * self.cfg.interval
+                })
+                .text((movie_data: any) => {
+                    return movie_data.snippet?.[0]?.paragraphs[0] || ""
+                })
+                .call(wrap, 700)
+        })
+
         
         // append lines
         let line_data: any[] = []
@@ -178,4 +212,65 @@ export class Timeline {
             .style("pointer-events", "none")
     }
 
+    getSectionIndex(index) {
+        for(let section_index = 0; section_index < this.data.length; section_index++) {
+            const section_length = this.data[section_index].movies.length
+            index -= section_length
+            if(index < 0) return section_index
+        }
+        return this.data.length - 1
+    }
+
+    getSectionOffset() {
+        return [0, 1000, 2000]
+    }
+    
+    getTitlePosition(roles) {
+        const xTranslate = (roles) => this.cfg.xScale(roles[0])
+        return xTranslate(roles) + 10
+    }
+
+    getSnippetPosition(roles) {
+        const xTranslate = (roles) => this.cfg.xScale(roles[0]) + this.cfg.xScale.bandwidth()/2 
+        return xTranslate(roles)
+    }
+
+}
+function wrap(text, width) {
+    text.each(function (this: any, d, i) {
+        var text = d3.select(this),
+            words = text.text().split(/\s+/).reverse(),
+            word,
+            line: any[] = [],
+            lineNumber = 0,
+            lineHeight = 1.1, // ems
+            x = text.attr("x"),
+            y = text.attr("y"),
+            dy = 0, //parseFloat(text.attr("dy")),
+            tspan = text.text(null)
+                .append("tspan")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", dy + "em")
+                .attr("text-anchor", "bottom")
+                .attr("dominant-baseline", "central")
+        while (word = words.pop()) {
+            line.push(word);
+            tspan.text(line.join(" "));
+            if (tspan.node()!.getComputedTextLength() > width && line.length > 1) {
+                line.pop();
+                tspan.text(line.join(" "));
+                line = [word];
+                tspan = text.append("tspan")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                    .attr("dominant-baseline", "central")
+                    .text(word);
+            }
+        }
+        const line_num = text.selectAll("tspan").nodes().length
+        const em_to_px = 16
+        text.selectAll("tspan").attr("y", parseFloat(y) - em_to_px / 2 * lineHeight * (line_num - 1) / 2)
+    });
 }

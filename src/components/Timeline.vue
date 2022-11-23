@@ -1,7 +1,11 @@
 <template>
     <div class="timeline-container">
         <div class="description-container">
-            <div v-for="(section, index) in section_desciptions" :id="'section_'+index" class="section">
+            <div v-for="(section, index) in section_desciptions" 
+                :id="'section_'+index" 
+                class="section"
+                :style="{top: section_offsets[index] + 'px'}"
+                >
                 <h4 class='section-header'> {{ section.header }} </h4>
                 <div class='section-description'> {{ section.description }} </div>
             </div>
@@ -23,8 +27,9 @@ const props = defineProps({
 })
 const svgClass = "timeline-svg"
 const svgSelector = vue.computed(() => `.${svgClass}`)
+const section_offsets: Ref<number[]> = ref([])
 const timeline = new Timeline(svgSelector.value, {
-    width: Math.min(1100, window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth),
+    width: Math.min(1100, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
     tracks: {
         "actor": "#872B3D",
         "director": "#56D3CD",
@@ -32,11 +37,15 @@ const timeline = new Timeline(svgSelector.value, {
         "producer": "#D7D160",
     },
 })
+vue.watch(() => props.timeline_data, () => {
+    if(props.timeline_data !== undefined) {
+        timeline.init(props.timeline_data)
+        section_offsets.value = timeline.getSectionOffset()
+        setupScroller()
 
-vue.onMounted(() => {
-    timeline.init(props.timeline_data)
-    setupScroller()
+    }
 })
+
 
 
 function setupScroller() {
@@ -69,7 +78,25 @@ function setupScroller() {
 .timeline-container {
     display: flex;
 }
+.section {
+    visibility: hidden;
+    position: absolute;
+    width: inherit;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.5s linear;
+
+}
 :deep(.active) {
     position: fixed;
+    top: 15% !important;
+    visibility: visible;
+    opacity: 1;
+}
+.description-container {
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
 }
 </style>
