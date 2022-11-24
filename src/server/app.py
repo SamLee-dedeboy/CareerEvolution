@@ -15,4 +15,4 @@ def get_artists():
 
 @app.route("/data/career/<artist_id>")
 def get_career(artist_id):
-    return json.dumps(data_manager.loadCareer(artist_id), default=vars)
+    return json.dumps(data_manager.loadCareer(artist_id))
