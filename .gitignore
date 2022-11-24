@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 *.json
+*.pyc
+__pycache__/
+*.tsv
