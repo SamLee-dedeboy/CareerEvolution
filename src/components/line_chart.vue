@@ -32,7 +32,7 @@
         mounted(){ // actually drawing
             console.log("In linechart: ", this.myData);
             this.prepareData(this.myData);
-            // this.drawLineChart(localData, "#lines");
+            this.drawLineChart(this.prepared_data, "#lines");
         },
         methods: {
             prepareData(data) {
@@ -78,9 +78,48 @@
                     ppl_lines.push(ppl_line);
                 });
                 console.log(ppl_lines);
+                this.prepared_data = ppl_lines;
             },
-            drawLineChart(data, id) {
 
+            drawLineChart(data, id) {
+                const margin = {left: 10, right: 10, top: 10, bottom: 10};
+                const width = 1000;
+                const height = 800;
+
+                const xRange = [margin.left, width - margin.right];
+                const yRange = [margin.top, height - margin.bottom];
+
+                const xScale = d3.scaleLinear([0, 10], xRange);
+                const yScale = d3.scaleLinear([300, 0], yRange);
+
+                const xAxis = d3.axisBottom(xScale).ticks(width / 100).tickSizeOuter(0);
+                const yAxis = d3.axisLeft(yScale).ticks(height / 50);
+
+                d3.selectAll(".linechart").remove();
+                let svg = d3.select(id).append("svg")
+                    .attr("class", "linechart")
+                    .attr("viewBox", [0, 0, width, height])
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom);
+
+                data.forEach(chartData => {
+                    const X = d3.map(chartData, d => d.year);
+                    const Y = d3.map(chartData, d => d.bin);
+                    const I = d3.range(X.length);
+
+                    // Construct a line generator.
+                    const line = d3.line()
+                        .x(i => xScale(X[i]))
+                        .y(i => yScale(Y[i]));
+                    
+                    // draw line for movie.
+                    const lines = svg.append('path')
+                        .attr('fill', 'none')
+                        .attr('stroke', "steelblue")
+                        .attr('stroke-width', 1)
+                        .attr('d', line(I))
+                });
+                
             }
         }
     }
