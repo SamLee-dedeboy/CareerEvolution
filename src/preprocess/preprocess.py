@@ -11,6 +11,8 @@ import os
 from os import listdir
 from os.path import isfile, join
 import glob
+from nltk import tokenize
+import re
 # csv.f_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
@@ -650,15 +652,21 @@ def generate_movie_info_w_snippet(actor_snippets, actor_career_dict, movie_pool_
         movie_title = movie_pool_dict[movie_id]['title']
         for section in actor_snippets['career']:
             header = section['header']
-            paragraphs = []
+            snippets = []
             for p, content in section.items():
                 if p == "header": continue
-                if movie_title.lower() in content.lower(): # alternative: only store sentences, not entire paragraph
-                    paragraphs.append(content) 
-            if len(paragraphs) != 0:
-                movie_info['wiki_description'].append({"header": header, "paragraphs": paragraphs})
+                for sentence in splitSentences(content, post_process=lambda sentence: re.sub("[\(\[].*?[\)\]]", "", sentence).strip()):
+                    if movie_title.lower() in sentence.lower(): # alternative: only store sentences, not entire paragraph
+                        snippets.append({"header": header, "p": p, "snippet": sentence}) 
+            if len(snippets) != 0:
+                # movie_info['wiki_description'].append({"header": header, "sentences": snippets})
+                movie_info['wiki_description'].append(snippets)
         movie_infos.append(movie_info)
     return movie_infos
+
+def splitSentences(content, post_process=lambda x:x):
+    return list(map(post_process, tokenize.sent_tokenize(content)))
+
 
 main()
 
