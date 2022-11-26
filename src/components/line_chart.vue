@@ -10,7 +10,9 @@
         data() { // pass data to others
             return {
                 prepared_data: undefined,
-                colorScale: undefined
+                colorScale: undefined,
+                data_years: undefined,
+                plateau_length: 0.5,
             }
         },
         props:{ // received data from others
@@ -42,6 +44,7 @@
                 // rank the initial order for all ppl.
                 let ppl_order = [];
                 Object.keys(data).forEach(key => {
+                    this.data_years = data[key]['pop_bin'].length;
                     let tmp = {
                         bin: data[key]['pop_bin'][0],
                         id: key
@@ -61,14 +64,20 @@
                     let ppl_line = [];
                     let bin_used = {};
                     for (let idx=0; idx<data[ppl.id]['pop_bin'].length; idx++){
-                        let ppl_year = {
+                        let ppl_year_pre = {
                             id: ppl.id,
                             year: idx,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
                         };
+                        let ppl_year_next = {
+                            id: ppl.id,
+                            year: idx + this.plateau_length,
+                            bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
+                        };
                         
                         bin_used[String(data[ppl.id]['pop_bin'][idx])] = "true";
-                        ppl_line.push(ppl_year);
+                        ppl_line.push(ppl_year_pre);
+                        ppl_line.push(ppl_year_next);
                     }
                     for (let idx=0; idx<=5; idx++){
                         if (idx in bin_used){
@@ -89,8 +98,8 @@
                 const xRange = [margin.left, width - margin.right];
                 const yRange = [margin.top, height - margin.bottom];
 
-                const xScale = d3.scaleLinear([0, 10], xRange);
-                const yScale = d3.scaleLinear([300, 0], yRange);
+                const xScale = d3.scaleLinear([0, this.data_years-1 + this.plateau_length], xRange);
+                const yScale = d3.scaleLinear([305, 5], yRange);
 
                 const xAxis = d3.axisBottom(xScale).ticks(width / 100).tickSizeOuter(0);
                 const yAxis = d3.axisLeft(yScale).ticks(height / 50);
@@ -154,8 +163,22 @@
                     const lines = svg.append('path')
                         .attr('fill', 'none')
                         .attr('stroke', "steelblue")
-                        .attr('stroke-width', 1)
+                        .attr('stroke-width', 1.5)
                         .attr('d', line(I))
+                        .attr('index', i => i)
+                        .on('mouseover', function (d){
+                            d3.select(this).raise();
+                            d3.select(this).transition()
+                                .duration('50')
+                                .attr('stroke-width', 3)
+                                .attr('stroke', 'red')
+                        })
+                        .on('mouseout', function (d, i){
+                            d3.select(this).transition()
+                                .duration('50')
+                                .attr('stroke-width', 1.5)
+                                .attr('stroke', 'steelblue')
+                        });
                 });
                 
             }
