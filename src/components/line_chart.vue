@@ -84,7 +84,7 @@
             drawLineChart(data, id) {
                 const margin = {left: 10, right: 10, top: 10, bottom: 10};
                 const width = 1000;
-                const height = 800;
+                const height = 700;
 
                 const xRange = [margin.left, width - margin.right];
                 const yRange = [margin.top, height - margin.bottom];
@@ -101,6 +101,44 @@
                     .attr("viewBox", [0, 0, width, height])
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom);
+                
+                // add rects for popilarity groups background.
+                const rect_0 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(55))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#FFE5CC");
+                const rect_1 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(105))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#FFFFCC");
+                const rect_2 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(155))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#E5FFCC");
+                const rect_3 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(205))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#CCFFFF");
+                const rect_4 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(255))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#CCCCFF");
+                const rect_5 = svg.append("rect")
+                    .attr('x', xScale(0))
+                    .attr('y', yScale(305))
+                    .attr('height', height/6)
+                    .attr('width', width)
+                    .attr("fill", "#FFCCE5");
 
                 data.forEach(chartData => {
                     const X = d3.map(chartData, d => d.year);
