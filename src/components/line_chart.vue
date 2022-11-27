@@ -13,10 +13,13 @@
                 colorScale: undefined,
                 data_years: undefined,
                 plateau_length: 0.5,
+                selected_actor: undefined,
+                if_selected: false
             }
         },
         props:{ // received data from others
             myData: Object,
+            mySubsetName: String
         },
         watch: { 
             myData: function(newVal, oldVal) { // watch it
@@ -47,7 +50,8 @@
                     this.data_years = data[key]['pop_bin'].length;
                     let tmp = {
                         bin: data[key]['pop_bin'][0],
-                        id: key
+                        id: key,
+                        name: data[key]['name'],
                     };
                     ppl_order.push(tmp)
                 });
@@ -67,12 +71,16 @@
                         let ppl_year_pre = {
                             id: ppl.id,
                             year: idx,
+                            name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
+                            m_name: data[ppl.id]['movie_name'][idx]
                         };
                         let ppl_year_next = {
                             id: ppl.id,
                             year: idx + this.plateau_length,
+                            name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
+                            m_name: data[ppl.id]['movie_name'][idx]
                         };
                         
                         bin_used[String(data[ppl.id]['pop_bin'][idx])] = "true";
@@ -91,7 +99,9 @@
             },
 
             drawLineChart(data, id) {
-                const margin = {left: 10, right: 10, top: 10, bottom: 10};
+                const parent_this = this;
+
+                const margin = {left: 10, right: 10, top: 30, bottom: 10};
                 const width = 1000;
                 const height = 700;
 
@@ -102,7 +112,7 @@
                 const yScale = d3.scaleLinear([305, 5], yRange);
 
                 const xAxis = d3.axisBottom(xScale).ticks(width / 100).tickSizeOuter(0);
-                const yAxis = d3.axisLeft(yScale).ticks(height / 50);
+                const yAxis = d3.axisLeft(yScale).ticks(height / 1);
 
                 d3.selectAll(".linechart").remove();
                 let svg = d3.select(id).append("svg")
@@ -111,6 +121,15 @@
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom);
                 
+                svg.append("text")
+                    .attr("x", margin.left + width/2)
+                    .attr("y", margin.top-5)
+                    .text("Harry Potter Cast Career Evolution")
+                    .style("font-size", "30px")
+                    .attr("font-weight", "bold")
+                    .attr("text-anchor", "middle")
+                    .style('fill', 'steelblue');
+
                 // add rects for popilarity groups background.
                 const rect_0 = svg.append("rect")
                     .attr('x', xScale(0))
@@ -153,11 +172,33 @@
                     const X = d3.map(chartData, d => d.year);
                     const Y = d3.map(chartData, d => d.bin);
                     const I = d3.range(X.length);
+                    const N = d3.map(chartData, d => d.name);
+                    const M = d3.map(chartData, d => d.m_name);
 
                     // Construct a line generator.
                     const line = d3.line()
                         .x(i => xScale(X[i]))
                         .y(i => yScale(Y[i]));
+                    
+                    function movies(indices) {
+                        let movie_names = [];
+                        let display_handler = true;
+                        for (let m_idx=0; m_idx<indices; m_idx++){
+                            if (M[m_idx] == 0.0) continue;
+                            else if (X[m_idx]%1 != 0) continue;
+                            let movie_tmp = {
+                                x: xScale(X[m_idx]),
+                                y: yScale(Y[m_idx]),
+                                m_name: M[m_idx]
+                            };
+                            if (display_handler)    movie_tmp.y += 13;
+                            else    movie_tmp.y -= 2;
+                            display_handler = !display_handler;
+                            movie_names.push(movie_tmp);
+                        }
+                        return movie_names;
+                    }
+                    const text_actor = movies(X.length);
                     
                     // draw line for movie.
                     const lines = svg.append('path')
@@ -165,20 +206,68 @@
                         .attr('stroke', "steelblue")
                         .attr('stroke-width', 1.5)
                         .attr('d', line(I))
-                        .attr('index', i => i)
+                        .attr('name', N[0])
                         .on('mouseover', function (d){
-                            d3.select(this).raise();
-                            d3.select(this).transition()
-                                .duration('50')
-                                .attr('stroke-width', 3)
-                                .attr('stroke', 'red')
+                            if (parent_this.if_selected == false){
+                                d3.select(this).raise();
+                                d3.select(this).transition()
+                                    .duration('50')
+                                    .attr('stroke-width', 3)
+                                    .attr('stroke', 'red');
+                                
+                                svg.append("text")
+                                    .attr("class", "click_line")
+                                    .attr("x", margin.left + 5)
+                                    .attr("y", margin.top + 20)
+                                    .text(this.getAttribute('name'))
+                                    .style("font-size", "20px")
+                                    .attr("font-weight", "bold")
+                                    .style('fill', 'red');
+                            }
+                            else;
                         })
                         .on('mouseout', function (d, i){
-                            d3.select(this).transition()
-                                .duration('50')
-                                .attr('stroke-width', 1.5)
-                                .attr('stroke', 'steelblue')
+                            // console.log(parent_this.if_selected);
+                            if (parent_this.if_selected == false) {
+                                d3.selectAll(".click_line").remove();
+                                d3.select(this).transition()
+                                    .duration('50')
+                                    .attr('stroke-width', 1.5)
+                                    .attr('stroke', 'steelblue');
+                            }
+                            else;
+                        })
+                        .on('click', function (d){
+                            if (parent_this.if_selected == false){
+                                parent_this.if_selected = true;
+
+                                for (let text_idx=0; text_idx<text_actor.length; text_idx++){
+                                    let text_tmp = text_actor[text_idx];
+                                    const texts = svg.append('text')
+                                        .attr("class", "click_line")
+                                        .attr("x", text_tmp.x)
+                                        .attr("y", text_tmp.y)
+                                        .text(text_tmp.m_name)
+                                        .style("font-size", "12px")
+                                        .attr("font-weight", "bold")
+                                        .style('fill', 'red');
+                                }
+                            }
+                            else {
+                                parent_this.if_selected = false;
+                            }
                         });
+                    
+                        function clickLine(x, y) {
+                            // d3.selectAll(".click_line").remove();
+                            // svg.append("text")
+                            //     .attr("class", "click_line")
+                            //     .attr("x", margin.left + 300)
+                            //     .attr("y", height -15)
+                            //     .text("80-100")
+                            //     .style("font-size", "9px")
+                            //     .attr("alignment-baseline","middle")
+                        }
                 });
                 
             }
