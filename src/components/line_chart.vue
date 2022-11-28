@@ -135,7 +135,7 @@
                 svg.append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", margin.top-5)
-                    .text("Harry Potter Cast Career Evolution")
+                    .text("Lord of the Ring Cast Career Evolution")
                     .style("font-size", "30px")
                     .attr("font-weight", "bold")
                     .attr("text-anchor", "middle")
@@ -153,13 +153,13 @@
                     .attr('y', yScale(105))
                     .attr('height', height/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FFFFCC");
+                    .attr("fill", "#FFFF99");
                 const rect_2 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(155))
                     .attr('height', height/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#E5FFCC");
+                    .attr("fill", "#FFCC99");
                 const rect_3 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(205))

@@ -59,10 +59,35 @@ def extract_actor_name(name_ids):
 def save_movie_subset():
     HP = {}
     HP_tmp = {}
-    # HP
-    movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    # # HP
+    # movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    # year_start = 2001
+    # year_end = 2011
+    # # Marvel 
+    # movie_ids = ["tt0371746", "tt1228705", "tt1300854", "tt0800080", "tt0800369", "tt1981115", "tt3501632", "tt10648342", 
+    #              "tt0458339", "tt1843866", "tt3498820", "tt0848228", "tt2395427", "tt4154756", "tt4154796", "tt2015381", 
+    #              "tt3896198", "tt0478970", "tt5095030", "tt1211837", "tt9419884", "tt2250912", "tt6320628", "tt10872600", 
+    #              "tt1825683", "tt9114286", "tt4154664", "tt3480822", "tt9376612", "tt9032400"]
+    # year_start = 2008
+    # year_end = 2022
+    # # JamesB
+    # movie_ids = ["tt0113189", "tt0120347", "tt0143145", "tt0246460", "tt0381061", "tt0830515", "tt1074638", "tt2379713", "tt2382320"]
+    # year_start = 1995
+    # year_end = 2021
+    # # StarWars
+    # movie_ids = ["tt0120915", "tt0121765", "tt0121766", "tt2488496", "tt2527336", "tt2527338", "tt3748528", "tt3778644"]
+    # year_start = 1999
+    # year_end = 2019
+    # # Xmen
+    # movie_ids = ["tt0120903", "tt0290334", "tt0376994", "tt0458525", "tt1270798", "tt1430132", "tt1877832", "tt1431045", 
+    #              "tt3385516", "tt3315342", "tt5463162", "tt6565702", "tt4682266"]
+    # year_start = 2000
+    # year_end = 2020
+    # LoR
+    movie_ids = ["tt0120737", "tt0167261", "tt0167260", "tt0903624", "tt1170358", "tt2310332"]
     year_start = 2001
-    year_end = 2011
+    year_end = 2014
+
     for movie_id in movie_ids:
         try:
             credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
@@ -93,7 +118,7 @@ def save_movie_subset():
             continue
     # print(HP_tmp)
 
-    avg_rank = 40
+    avg_rank = 60
     for movie_id in movie_ids:
         try:
             credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
@@ -216,7 +241,7 @@ def save_movie_subset():
         try:
             actor_movie_list = json.load(open('actor_careers/{}.json'.format(ppl)))
         except Exception as e:
-            print(e)
+            print(e, HP[ppl]['name'], HP[ppl]['role'])
             delete_list.append(ppl)
             continue
 
@@ -244,6 +269,7 @@ def save_movie_subset():
         
         if HP[ppl]['movie_count'][0] == 0: # must have works by the start year of the subset.
             delete_list.append(ppl)
+            # HP[ppl]['movie_count'][0] = 1
         else:
             for tmp in range(year_end - year_start + 1):
                 if HP[ppl]['movie_count'][tmp]!=0:
@@ -279,13 +305,13 @@ def save_movie_subset():
             HP[ppl]['popularity_max'] = list(HP[ppl]['popularity_max'])
             HP[ppl]['pop_bin'] = list(HP[ppl]['pop_bin'])
 
-            # print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
+            print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
         except Exception as e:
             print(e)
             continue
-    print(len(HP.keys()), HP)
+    # print(len(HP.keys()), HP)
 
-    with open('HP_{}.json'.format(avg_rank), 'w') as f:
+    with open('LoR_{}.json'.format(avg_rank), 'w') as f:
         json.dump(HP, f)
 
     return

@@ -7,7 +7,7 @@
 <script>
 import * as d3 from "d3";
 import LineChart from '../components/line_chart.vue';
-import testData from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
+import testData from "../preprocess/LoR_60.json"; /* Example of reading in data direct from file*/
 
 export default {
     data(){
