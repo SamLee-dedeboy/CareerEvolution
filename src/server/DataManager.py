@@ -1,15 +1,17 @@
 import json
 from collections import defaultdict
 from pprint import pprint
+import re
 class DataManager():
     def __init__(self):
         self.artist_infos = loadJson(r"data/target_actor_info.json")
         self.movie_infos = loadJson(r"data/movie_pool.json")
         self.careers = loadJson(r"data/career_w_snippets.json")
+        self.snippets_path = "data/career_snippets/"
 
     def loadCareer(self, artist_id):
         career = self.careers[artist_id]
-        return self.preprocess_career(self.add_infos(career))
+        return self.preprocess_career(artist_id, self.add_infos(career))
 
     def add_infos(self, career):
         if not career: return [] 
@@ -31,7 +33,7 @@ class DataManager():
             })
         return movie_infos
     
-    def preprocess_career(self, movie_infos):
+    def preprocess_career(self, artist_id, movie_infos):
         movie_infos.sort(key=lambda movie: int(movie['year']))
         stages = {}
         empty_movies = []
@@ -68,11 +70,22 @@ class DataManager():
             stage['paragraphs'] = list(stage['paragraphs'])
             stages_list.append({
                 "header": header,
-                "paragraphs": stage['paragraphs'],
+                "paragraphs": self.getParagraphs(artist_id, header, stage['paragraphs']),
                 "movies": stage['movies']
             })
         return stages_list
         
+    def getParagraphs(self, actor_id, target_header, target_pids):
+        snippets = json.load(open(self.snippets_path + actor_id + ".json"))['career']
+        paragraphs = []
+        for section in snippets:
+            if section['header'] == target_header:
+                for pid, snippet in section.items():
+                    if pid in target_pids: 
+                        paragraphs.append({pid: clean_snippet(snippet)})
+        return paragraphs
+                 
+
 
 
     def get_movie_info(self, movie_id):
@@ -103,6 +116,7 @@ def filter_snippets(header, snippets):
                 res.append(sentence)
     return res
 
-
+def clean_snippet(snippet):
+    return re.sub("[\(\[].*?[\)\]]", "", snippet).strip()
 
 
