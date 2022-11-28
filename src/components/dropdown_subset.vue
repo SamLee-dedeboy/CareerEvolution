@@ -23,6 +23,18 @@
                     {
                         id: 1,
                         name: "Lord of the Rings"
+                    },
+                    {
+                        id: 2,
+                        name: "X-Men"
+                    },
+                    {
+                        id: 3,
+                        name: "Star Wars"
+                    },
+                    {
+                        id: 4,
+                        name: "James Bond (007)"
                     }
                 ]
             }

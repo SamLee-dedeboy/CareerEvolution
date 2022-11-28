@@ -13,9 +13,9 @@
                 colorScale: undefined,
                 data_years: undefined,
                 plateau_length: 0.5,
-                selected_actor: undefined,
+                selected_actor: {},
                 if_selected: false,
-                selected_color: undefined
+                selected_color: undefined,
             }
         },
         props:{ // received data from others
@@ -24,6 +24,7 @@
         },
         watch: { 
             myData: function(newVal, oldVal) { // watch it
+                this.if_selected = false;
                 this.prepareData(this.myData);
                 this.drawLineChart(this.prepared_data, "#lines");
             },
@@ -69,6 +70,7 @@
                             name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
                             m_name: data[ppl.id]['movie_name'][idx],
+                            role_name: ppl.role
                         };
                         if (ppl.role == "actor")    ppl_year_pre.role = 0;
                         else if (ppl.role == "director")    ppl_year_pre.role = 1;
@@ -80,7 +82,8 @@
                             year: idx + this.plateau_length,
                             name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
-                            m_name: data[ppl.id]['movie_name'][idx]
+                            m_name: data[ppl.id]['movie_name'][idx],
+                            role_name: ppl.role
                         };
                         if (ppl.role == "actor")    ppl_year_next.role = 0;
                         else if (ppl.role == "director")    ppl_year_next.role = 1;
@@ -128,7 +131,7 @@
                 svg.append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", margin.top-5)
-                    .text("Lord of the Ring Cast Career Evolution")
+                    .text(this.mySubsetName + " Cast Career Evolution")
                     .style("font-size", "30px")
                     .attr("font-weight", "bold")
                     .attr("text-anchor", "middle")
@@ -138,37 +141,37 @@
                 const rect_0 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(55))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#FFE5CC");
                 const rect_1 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(105))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#FFFF99");
                 const rect_2 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(155))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#FFCC99");
                 const rect_3 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(205))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#CCFFFF");
                 const rect_4 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(255))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#CCCCFF");
                 const rect_5 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(305))
-                    .attr('height', height/6)
+                    .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
                     .attr("fill", "#FFCCE5");
 
@@ -179,6 +182,8 @@
                     const N = d3.map(chartData, d => d.name);
                     const M = d3.map(chartData, d => d.m_name);
                     const C = d3.map(chartData, d => d.role);
+                    const R = d3.map(chartData, d => d.role_name);
+                    const D = d3.map(chartData, d => d.id);
                     // [actor: blue, director: green, writer: purple, producer: brown]
                     const colors = ["steelblue", "#4C9900", "#990099", "#999900"]; 
 
@@ -223,6 +228,8 @@
                         .attr('stroke-width', 1.5)
                         .attr('d', line(I))
                         .attr('name', N[0])
+                        .attr('role', R[0])
+                        .attr('actor_id', D[0])
                         .attr("class", "all_lines")
                         .on('mouseover', function (d){
                             if (parent_this.if_selected == false){
@@ -237,7 +244,7 @@
                                     .attr("class", "click_line")
                                     .attr("x", margin.left + 5)
                                     .attr("y", margin.top + 20)
-                                    .text(this.getAttribute('name'))
+                                    .text(this.getAttribute('name') + " (" + this.getAttribute('role') + ")")
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
                                     .style('fill', 'red');
@@ -258,6 +265,11 @@
                         .on('click', function (d){
                             if (parent_this.if_selected == false){
                                 parent_this.if_selected = true;
+                                parent_this.selected_actor = {
+                                    id: this.getAttribute('actor_id'),
+                                    name: this.getAttribute('name')
+                                };
+                                parent_this.$emit('selectedChange', parent_this.selected_actor);
                                 d3.selectAll(".all_lines").transition()
                                     .duration('50')
                                     .attr('opacity', '0.1');
@@ -292,6 +304,8 @@
                             }
                             else {
                                 parent_this.if_selected = false;
+                                parent_this.selected_actor = {};
+                                parent_this.$emit('selectedChange', parent_this.selected_actor);
                                 d3.selectAll(this).transition()
                                     .duration('50')
                                     .attr("stroke", parent_this.selected_color);
@@ -313,7 +327,7 @@
                         }
                 });
                 
-            }
+            },
         }
     }
 
