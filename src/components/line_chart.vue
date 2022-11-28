@@ -187,7 +187,7 @@
                     const M = d3.map(chartData, d => d.m_name);
                     const C = d3.map(chartData, d => d.role);
                     // [actor: blue, director: green, writer: purple, producer: brown]
-                    const colors = ["#0000CC", "#006600", "#990099", "#999900"]; 
+                    const colors = ["steelblue", "#4C9900", "#990099", "#999900"]; 
 
                     // Construct a line generator.
                     const line = d3.line()
@@ -236,7 +236,7 @@
                                 parent_this.selected_color = this.getAttribute("stroke");
                                 d3.select(this).raise();
                                 d3.select(this).transition()
-                                    .duration('50')
+                                    .duration('0')
                                     .attr('stroke-width', 3)
                                     .attr('stroke', 'red');
                                 
@@ -256,7 +256,7 @@
                             if (parent_this.if_selected == false) {
                                 d3.selectAll(".click_line").remove();
                                 d3.select(this).transition()
-                                    .duration('50')
+                                    .duration('0')
                                     .attr('stroke-width', 1.5)
                                     .attr("stroke", parent_this.selected_color);
                             }
