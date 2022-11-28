@@ -14,7 +14,8 @@
                 data_years: undefined,
                 plateau_length: 0.5,
                 selected_actor: undefined,
-                if_selected: false
+                if_selected: false,
+                selected_color: undefined
             }
         },
         props:{ // received data from others
@@ -52,6 +53,7 @@
                         bin: data[key]['pop_bin'][0],
                         id: key,
                         name: data[key]['name'],
+                        role: data[key]['role'],
                     };
                     ppl_order.push(tmp)
                 });
@@ -73,8 +75,13 @@
                             year: idx,
                             name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
-                            m_name: data[ppl.id]['movie_name'][idx]
+                            m_name: data[ppl.id]['movie_name'][idx],
                         };
+                        if (ppl.role == "actor")    ppl_year_pre.role = 0;
+                        else if (ppl.role == "director")    ppl_year_pre.role = 1;
+                        else if (ppl.role == "writer")    ppl_year_pre.role = 2;
+                        else if (ppl.role == "producer")    ppl_year_pre.role = 3;
+
                         let ppl_year_next = {
                             id: ppl.id,
                             year: idx + this.plateau_length,
@@ -82,6 +89,10 @@
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
                             m_name: data[ppl.id]['movie_name'][idx]
                         };
+                        if (ppl.role == "actor")    ppl_year_next.role = 0;
+                        else if (ppl.role == "director")    ppl_year_next.role = 1;
+                        else if (ppl.role == "writer")    ppl_year_next.role = 2;
+                        else if (ppl.role == "producer")    ppl_year_next.role = 3;
                         
                         bin_used[String(data[ppl.id]['pop_bin'][idx])] = "true";
                         ppl_line.push(ppl_year_pre);
@@ -101,7 +112,7 @@
             drawLineChart(data, id) {
                 const parent_this = this;
 
-                const margin = {left: 10, right: 10, top: 30, bottom: 10};
+                const margin = {left: 15, right: 150, top: 50, bottom: 100};
                 const width = 1000;
                 const height = 700;
 
@@ -135,37 +146,37 @@
                     .attr('x', xScale(0))
                     .attr('y', yScale(55))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#FFE5CC");
                 const rect_1 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(105))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#FFFFCC");
                 const rect_2 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(155))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#E5FFCC");
                 const rect_3 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(205))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#CCFFFF");
                 const rect_4 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(255))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#CCCCFF");
                 const rect_5 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(305))
                     .attr('height', height/6)
-                    .attr('width', width)
+                    .attr('width', width - margin.left)
                     .attr("fill", "#FFCCE5");
 
                 data.forEach(chartData => {
@@ -174,6 +185,9 @@
                     const I = d3.range(X.length);
                     const N = d3.map(chartData, d => d.name);
                     const M = d3.map(chartData, d => d.m_name);
+                    const C = d3.map(chartData, d => d.role);
+                    // [actor: blue, director: green, writer: purple, producer: brown]
+                    const colors = ["#0000CC", "#006600", "#990099", "#999900"]; 
 
                     // Construct a line generator.
                     const line = d3.line()
@@ -183,6 +197,7 @@
                     function movies(indices) {
                         let movie_names = [];
                         let display_handler = true;
+                        let offset = 8;
                         for (let m_idx=0; m_idx<indices; m_idx++){
                             if (M[m_idx] == 0.0) continue;
                             else if (X[m_idx]%1 != 0) continue;
@@ -191,8 +206,16 @@
                                 y: yScale(Y[m_idx]),
                                 m_name: M[m_idx]
                             };
-                            if (display_handler)    movie_tmp.y += 13;
-                            else    movie_tmp.y -= 2;
+                            if (display_handler){
+                                if (offset == 8)    offset -= 8;
+                                else    offset = 8;
+                                movie_tmp.y += 11;
+                                movie_tmp.y += offset;
+                            }    
+                            else {
+                                movie_tmp.y -= 2;
+                                movie_tmp.y -= offset;
+                            }    
                             display_handler = !display_handler;
                             movie_names.push(movie_tmp);
                         }
@@ -203,12 +226,14 @@
                     // draw line for movie.
                     const lines = svg.append('path')
                         .attr('fill', 'none')
-                        .attr('stroke', "steelblue")
+                        .attr('stroke', colors[C[0]])
                         .attr('stroke-width', 1.5)
                         .attr('d', line(I))
                         .attr('name', N[0])
+                        .attr("class", "all_lines")
                         .on('mouseover', function (d){
                             if (parent_this.if_selected == false){
+                                parent_this.selected_color = this.getAttribute("stroke");
                                 d3.select(this).raise();
                                 d3.select(this).transition()
                                     .duration('50')
@@ -233,13 +258,32 @@
                                 d3.select(this).transition()
                                     .duration('50')
                                     .attr('stroke-width', 1.5)
-                                    .attr('stroke', 'steelblue');
+                                    .attr("stroke", parent_this.selected_color);
                             }
                             else;
                         })
                         .on('click', function (d){
                             if (parent_this.if_selected == false){
                                 parent_this.if_selected = true;
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('50')
+                                    .attr('opacity', '0.1');
+                                
+                                d3.select(this).raise();
+                                d3.select(this).transition()
+                                    .duration('50')
+                                    .attr('stroke-width', 3)
+                                    .attr('stroke', 'red')
+                                    .attr('opacity', '1');
+                                
+                                svg.append("text")
+                                    .attr("class", "click_line")
+                                    .attr("x", margin.left + 5)
+                                    .attr("y", margin.top + 20)
+                                    .text(this.getAttribute('name'))
+                                    .style("font-size", "20px")
+                                    .attr("font-weight", "bold")
+                                    .style('fill', 'red');
 
                                 for (let text_idx=0; text_idx<text_actor.length; text_idx++){
                                     let text_tmp = text_actor[text_idx];
@@ -248,13 +292,19 @@
                                         .attr("x", text_tmp.x)
                                         .attr("y", text_tmp.y)
                                         .text(text_tmp.m_name)
-                                        .style("font-size", "12px")
+                                        .style("font-size", "9px")
                                         .attr("font-weight", "bold")
                                         .style('fill', 'red');
                                 }
                             }
                             else {
                                 parent_this.if_selected = false;
+                                d3.selectAll(this).transition()
+                                    .duration('50')
+                                    .attr("stroke", parent_this.selected_color);
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('50')
+                                    .attr('opacity', '1');
                             }
                         });
                     
