@@ -24,15 +24,8 @@
         },
         watch: { 
             myData: function(newVal, oldVal) { // watch it
-                // this.prepareData(this.myBarchartData, this.mySelection);
-                // if (this.mySelection.id===1 || this.mySelection.id===2 || this.mySelection.id===3 || this.mySelection.id===4 || this.mySelection.id===5){
-                //     console.log(this.mySelection.id, "bar");
-                //     this.drawBarChart(this.prepared_data, "#bar", this.mySelection)
-                // }
-                // else{
-                //     console.log(this.mySelection.id, "stacked");
-                //     this.drawStackedBarChart(this.prepared_data, "#bar")
-                // }
+                this.prepareData(this.myData);
+                this.drawLineChart(this.prepared_data, "#lines");
             },
         },
         mounted(){ // actually drawing
