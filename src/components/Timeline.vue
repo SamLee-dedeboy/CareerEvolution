@@ -32,9 +32,9 @@ const timeline = new Timeline(svgSelector.value, {
     width: Math.min(1100, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
     tracks: {
         "actor": "#872B3D",
+        "producer": "#D7D160",
         "director": "#56D3CD",
         "writer": "#FC6940",
-        "producer": "#D7D160",
     },
 })
 vue.watch(() => props.timeline_data, () => {

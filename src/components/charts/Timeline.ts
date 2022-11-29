@@ -1,5 +1,4 @@
 import * as d3 from "d3"
-import { line } from "d3"
 
 const track_index2name = ['actor', 'director', 'writer', 'producer']
 interface Margin {
@@ -66,6 +65,11 @@ export class Timeline {
             .attr("transform", "translate(" + (this.cfg.margin.left) + "," + (this.cfg.margin.top) + ")");
 
         this.setupTracks()
+        // console.log(count_movies(data, 1))
+        data = wrap_node(data)
+        // console.log(count_movies(data, 2))
+        data = merge_by_year(data)
+        // console.log(count_movies(data, 3))
         this.setupTimeline(data)
 
     }
@@ -119,7 +123,7 @@ export class Timeline {
         const canvas = this.svg.select("g.canvas")
 
         // TODO: fix multiple roles
-        const xTranslate = (d) => this.cfg.xScale(d.role[0]) + this.cfg.xScale.bandwidth()/2 
+        const xTranslate = (d) => this.cfg.xScale(d.role[1] || d.role[0]) + this.cfg.xScale.bandwidth()/2 
         const sections_container = canvas.append("g").attr("class", "sections-container")
         // append sections
         const sections = sections_container.selectAll("g")
@@ -149,7 +153,6 @@ export class Timeline {
 
                 })
                 .on("mouseout", function(this: any, e, d) {
-                    console.log(d)
                     this.classList.remove("hovered")
                 })
         })
@@ -168,9 +171,10 @@ export class Timeline {
                     return self.timeline_margin_top + title_index * self.cfg.interval
                 })
                 .text((movie_data: any) => {
-                    return movie_data.title
+                    return movie_data.title + " " + movie_data.year 
                 })
                 .call(wrap, self.cfg.xScale.bandwidth()/2)
+
             // snippets
             d3.select(this).selectAll("text.snippets")
                 .data(d.movies)
@@ -182,10 +186,10 @@ export class Timeline {
                     return self.timeline_margin_top + snippet_index * self.cfg.interval
                 })
                 .text((movie_data: any) => {
-                    if(movie_data.snippet.length == 0) return ""
+                    if(!movie_data.snippet || movie_data.snippet.length == 0) return ""
                     return movie_data.snippet.map(snippet => snippet.snippet).join("\n")
                 })
-                .call(wrap, 700)
+                .call(wrap, self.cfg.xScale.bandwidth() * 3)
         })
 
         
@@ -226,12 +230,12 @@ export class Timeline {
     }
     
     getTitlePosition(roles) {
-        const xTranslate = (roles) => this.cfg.xScale(roles[0])
+        const xTranslate = (roles) => this.cfg.xScale(roles[1] || roles[0])
         return xTranslate(roles) + 10
     }
 
     getSnippetPosition(roles) {
-        const xTranslate = (roles) => this.cfg.xScale(roles[0]) + this.cfg.xScale.bandwidth()/2 
+        const xTranslate = (roles) => this.cfg.xScale(roles[1] || roles[0]) + this.cfg.xScale.bandwidth()/2 
         return xTranslate(roles)
     }
 
@@ -273,4 +277,162 @@ function wrap(text, width) {
         const em_to_px = 16
         text.selectAll("tspan").attr("y", parseFloat(y) - em_to_px / 2 * lineHeight * (line_num - 1) / 2)
     });
+}
+
+function wrap_node(data) {
+    // const cloned = JSON.parse(JSON.stringify(data));
+    data.forEach((stage, stage_index) => {
+        let wrapped_nodes: any[] = []
+        let empty_movies: any[] = []
+        let cur_role = ""
+        stage.movies.forEach((movie, index) => {
+            // console.log(movie, movie.snippet.length)
+            const role = movie.role[1] || movie.role[0] 
+            if(cur_role == "") cur_role = role
+            if(movie.snippet.length != 0) {
+                // create new empty node if empty_movies not empty
+                if(empty_movies.length != 0) {
+                    const empty_node = {
+                        "type": "empty",
+                        "title": "compact",
+                        "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        "role": [cur_role],
+                        "movies": empty_movies
+                    }
+                    wrapped_nodes.push(empty_node)
+                    empty_movies = []
+                }
+                wrapped_nodes.push(movie)
+                return
+            }
+            if(movie.snippet.length == 0) {
+                if(cur_role == role) {
+                    empty_movies.push(movie)
+                    return
+                } else {
+                    // create new empty node
+                    const empty_node = {
+                        "type": "empty",
+                        "title": "compact",
+                        "movies": empty_movies,
+                        "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        "role": [cur_role]
+                    }
+                    wrapped_nodes.push(empty_node)
+                    empty_movies = []
+                    cur_role = role
+                    return
+                }
+            }
+        })
+        stage.movies = wrapped_nodes
+    }) 
+    console.log(data)
+    return data
+}
+
+function merge_by_year(data) {
+    data.forEach((stage) => {
+        let res_movies: any[] = []
+        const paragraph_list = stage.paragraphs
+        let year_movies: any = []
+        let cur_year = 0
+        let cur_role = ""
+        stage.movies.forEach((movie, index) => {
+            const year = +movie.year
+            const role = movie.role[1] || movie.role[0]
+            if(cur_year == 0) cur_year = year
+            if(cur_role == "") cur_role = role
+            if(cur_year == year && role == cur_role) {
+                year_movies.push(movie)
+                return
+            } else {
+                if(year_movies.length == 1) {
+                    res_movies = res_movies.concat(year_movies)
+                    year_movies = [movie]
+                    cur_role = role
+                    cur_year = year
+                    return
+                }
+                // merge movie snippets
+                let target_paragraph_ids = new Set()
+                // get paragraph ids
+                year_movies.forEach(movie => {
+                    if(!movie.snippet || movie.snippet.length == 0) return
+                    movie.snippet.forEach(snippet => {
+                        target_paragraph_ids.add(snippet.p)
+                    })
+                })
+                // get paragraph texts
+                let target_paragraphs = paragraph_list.filter(p => target_paragraph_ids.has(Object.keys(p)[0]))
+                target_paragraphs = target_paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
+                const sentences = target_paragraphs.join(" ").match( /[^\.!\?]+[\.!\?]+/g ).map(sentence => sentence.trim())
+                const snippets = filter_sentences(year_movies.map(movie => movie.title), sentences)
+                res_movies.push({
+                    "type": "merged",
+                    "title": year_movies.map(movie => movie.title).join(", "),
+                    "movies": year_movies,
+                    "year": cur_year,
+                    "snippet": snippets.map(snippet => { 
+                        return {
+                            snippet: snippet
+                        }
+                    }),
+                    "role": [cur_role],
+                })
+
+                // reset everything
+                cur_year = year
+                cur_role = role
+                year_movies = [movie]
+            }
+        })
+        stage.movies = res_movies
+    })
+    console.log(data)
+    return data
+}
+
+function filter_sentences(target_titles, sentences) {
+    return sentences.filter(sentence => {
+        let flag = false
+        target_titles.forEach(title => {
+            if(sentence.includes(title)) {
+                flag = true
+                return
+            }
+        })
+        return flag
+    })
+}
+
+function count_movies(data, flag) {
+    let count = 0
+    if(flag == 1) {
+        data.forEach(stage => {
+            count += stage.movies.length
+        })
+    } 
+    if(flag == 2) {
+        data.forEach(stage => {
+            stage.movies.forEach(node => {
+                if(node.type == "empty")
+                    count += node.movies.length
+                else
+                    count += 1
+            })
+        })
+    }
+    if(flag == 3) {
+        data.forEach(stage => {
+            stage.movies.forEach(node => {
+                if(node.type == "empty" || node.type == "merged")
+                    count += node.movies.length
+                else
+                    count += 1
+            })
+        })
+
+    }
+    return count
 }
