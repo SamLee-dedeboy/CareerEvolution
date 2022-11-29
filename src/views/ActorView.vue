@@ -28,7 +28,7 @@ async function get_career(artist) {
             stage_descriptions.value = json.map(stage => {
                 return {
                     "header": stage.header,
-                    "description": stage.paragraphs
+                    "description": stage.paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]]).join(" ")
                 }
             })
             console.log("career fetched", json)
