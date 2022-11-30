@@ -98,5 +98,6 @@ function setupScroller() {
   flex-direction: column;
   text-align: center;
   justify-content: center;
+  margin-left: 15px;
 }
 </style>

@@ -8,9 +8,9 @@ interface Margin {
     right: number
 }
 export class TimelineConfig {
-    width: number = 600  
+    width: number = 700  
 	height: number = 600
-	margin: Margin = {top: 20, right: 20, bottom: 20, left: 20}
+	margin: Margin = {top: 20, right: 20, bottom: 20, left: 100}
     interval: number = 80
     xScale: any;
     tracks: any;
@@ -55,7 +55,7 @@ export class Timeline {
         // setup scales
         this.cfg.xScale = d3.scaleBand()
                 .domain(Object.keys(this.cfg.tracks))
-                .range([0, this.svgWidth])
+                .range([0, this.cfg.width])
         this.yInterval = (year, start_year) => {
             return this.timeline_margin_top + (+year - start_year) * this.cfg.interval
         }
@@ -181,9 +181,21 @@ export class Timeline {
                 .attr("x", (d: any) => self.getTitlePosition(d.role))
                 .attr("y", (d: any) => self.yInterval(+d.year, start_year))
                 .text((movie_data: any) => {
-                    return movie_data.title + " " + movie_data.year 
+                    return movie_data.title
                 })
                 .call(wrap, self.cfg.xScale.bandwidth()/2)
+                
+            // years
+            d3.select(this).selectAll("text.years")
+                .data(d.movies)
+                .join("text")
+                .attr("class", "years")
+                .attr("x", -50)
+                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
+                .text((movie_data: any) => {
+                    return movie_data.year + " - "
+                })
+                .call(wrap, 100)
 
             // snippets
             d3.select(this).selectAll("text.snippets")
