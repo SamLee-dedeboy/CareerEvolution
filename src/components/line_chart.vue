@@ -146,37 +146,37 @@
                     .attr('y', yScale(55))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FFE5CC");
+                    .attr("fill", "#FEF0D5");
                 const rect_1 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(105))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FFFF99");
+                    .attr("fill", "#FDE1AC");
                 const rect_2 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(155))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FFCC99");
+                    .attr("fill", "#FCD382");
                 const rect_3 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(205))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#CCFFFF");
+                    .attr("fill", "#FBC459");
                 const rect_4 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(255))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#CCCCFF");
+                    .attr("fill", "#FAB52F");
                 const rect_5 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(305))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FFCCE5");
+                    .attr("fill", "#F9A706");
 
                 let ppl_count = 0;
                 data.forEach(chartData => {
