@@ -48,6 +48,7 @@
                         id: key,
                         name: data[key]['name'],
                         role: data[key]['role'],
+                        roles: data[key]['roles']
                     };
                     ppl_order.push(tmp)
                 });
@@ -70,7 +71,8 @@
                             name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
                             m_name: data[ppl.id]['movie_name'][idx],
-                            role_name: ppl.role
+                            role_name: ppl.role,
+                            roles: ppl.roles,
                         };
                         if (ppl.role == "actor")    ppl_year_pre.role = 0;
                         else if (ppl.role == "director")    ppl_year_pre.role = 1;
@@ -83,7 +85,8 @@
                             name: ppl.name,
                             bin: group_offset[String(data[ppl.id]['pop_bin'][idx])] + 2*group_counter[String(data[ppl.id]['pop_bin'][idx])],
                             m_name: data[ppl.id]['movie_name'][idx],
-                            role_name: ppl.role
+                            role_name: ppl.role,
+                            roles: ppl.roles,
                         };
                         if (ppl.role == "actor")    ppl_year_next.role = 0;
                         else if (ppl.role == "director")    ppl_year_next.role = 1;
@@ -108,7 +111,7 @@
             drawLineChart(data, id) {
                 const parent_this = this;
 
-                const margin = {left: 15, right: 150, top: 50, bottom: 100};
+                const margin = {left: 100, right: 150, top: 50, bottom: 100};
                 const width = 1000;
                 const height = 700;
 
@@ -175,6 +178,7 @@
                     .attr('width', width - margin.left)
                     .attr("fill", "#FFCCE5");
 
+                let ppl_count = 0;
                 data.forEach(chartData => {
                     const X = d3.map(chartData, d => d.year);
                     const Y = d3.map(chartData, d => d.bin);
@@ -183,6 +187,7 @@
                     const M = d3.map(chartData, d => d.m_name);
                     const C = d3.map(chartData, d => d.role);
                     const R = d3.map(chartData, d => d.role_name);
+                    const Rs = d3.map(chartData, d => d.roles);
                     const D = d3.map(chartData, d => d.id);
                     // [actor: blue, director: green, writer: purple, producer: brown]
                     const colors = ["steelblue", "#4C9900", "#990099", "#999900"]; 
@@ -228,12 +233,18 @@
                         .attr('stroke-width', 1.5)
                         .attr('d', line(I))
                         .attr('name', N[0])
+                        .attr('id', D[0])
                         .attr('role', R[0])
+                        .attr('roles', Rs[0])
                         .attr('actor_id', D[0])
                         .attr("class", "all_lines")
+                        .attr("count", String(ppl_count))
                         .on('mouseover', function (d){
                             if (parent_this.if_selected == false){
                                 parent_this.selected_color = this.getAttribute("stroke");
+                                d3.select("#count_"+this.getAttribute("count")).transition()
+                                    .duration('0')
+                                    .attr('opacity', '1');
                                 d3.select(this).raise();
                                 d3.select(this).transition()
                                     .duration('0')
@@ -244,7 +255,7 @@
                                     .attr("class", "click_line")
                                     .attr("x", margin.left + 5)
                                     .attr("y", margin.top + 20)
-                                    .text(this.getAttribute('name') + " (" + this.getAttribute('role') + ")")
+                                    .text(this.getAttribute('name') + " (" + this.getAttribute('roles') + ")")
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
                                     .style('fill', 'red');
@@ -254,6 +265,9 @@
                         .on('mouseout', function (d, i){
                             // console.log(parent_this.if_selected);
                             if (parent_this.if_selected == false) {
+                                d3.select("#count_"+this.getAttribute("count")).transition()
+                                    .duration('0')
+                                    .attr('opacity', '0.3');
                                 d3.selectAll(".click_line").remove();
                                 d3.select(this).transition()
                                     .duration('0')
@@ -315,16 +329,111 @@
                             }
                         });
                     
-                        function clickLine(x, y) {
-                            // d3.selectAll(".click_line").remove();
-                            // svg.append("text")
-                            //     .attr("class", "click_line")
-                            //     .attr("x", margin.left + 300)
-                            //     .attr("y", height -15)
-                            //     .text("80-100")
-                            //     .style("font-size", "9px")
-                            //     .attr("alignment-baseline","middle")
-                        }
+                    svg.append("text")
+                        .attr("x", 2)
+                        .attr("y", height - margin.bottom - ppl_count*(height - margin.bottom - margin.top)/Object.keys(this.myData).length)
+                        .text(N[0])
+                        .style("font-size", "10px")
+                        .attr("font-weight", "bold")
+                        .style('fill', colors[C[0]])
+                        .attr('color', colors[C[0]])
+                        .attr('opacity', '0.3')
+                        .attr('name', N[0])
+                        .attr('roles', Rs[0])
+                        .attr('actor_id', D[0])
+                        .attr('id', "count_"+String(ppl_count))
+                        .on('mouseover', function(d){
+                            if (parent_this.if_selected == false){
+                                parent_this.selected_color = this.getAttribute("color");
+                                d3.select(this).transition()
+                                    .duration('0')
+                                    .attr('opacity', '1');
+                                // highlight the line
+                                d3.select("#"+D[0]).raise();
+                                d3.select("#"+D[0]).transition()
+                                    .duration('0')
+                                    .attr('stroke-width', 3)
+                                    .attr('stroke', 'red');
+                                
+                                svg.append("text")
+                                    .attr("class", "click_line")
+                                    .attr("x", margin.left + 5)
+                                    .attr("y", margin.top + 20)
+                                    .text(this.getAttribute('name') + " (" + this.getAttribute('roles') + ")")
+                                    .style("font-size", "20px")
+                                    .attr("font-weight", "bold")
+                                    .style('fill', 'red');
+                            }
+                            else;
+                        })
+                        .on('mouseout', function(d, i){
+                            if (parent_this.if_selected == false) {
+                                d3.select(this).transition()
+                                    .duration('0')
+                                    .attr('opacity', '0.3');
+
+                                d3.selectAll(".click_line").remove();
+                                d3.select("#"+D[0]).transition()
+                                    .duration('0')
+                                    .attr('stroke-width', 1.5)
+                                    .attr("stroke", parent_this.selected_color);
+                            }
+                            else;
+                        })
+                        .on('click', function (d){
+                            if (parent_this.if_selected == false){
+                                parent_this.if_selected = true;
+                                parent_this.selected_actor = {
+                                    id: this.getAttribute('actor_id'),
+                                    name: this.getAttribute('name')
+                                };
+                                parent_this.$emit('selectedChange', parent_this.selected_actor);
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('50')
+                                    .attr('opacity', '0.1');
+                                
+                                d3.select("#"+D[0]).raise();
+                                d3.select("#"+D[0]).transition()
+                                    .duration('50')
+                                    .attr('stroke-width', 3)
+                                    .attr('stroke', 'red')
+                                    .attr('opacity', '1');
+                                
+                                svg.append("text")
+                                    .attr("class", "click_line")
+                                    .attr("x", margin.left + 5)
+                                    .attr("y", margin.top + 20)
+                                    .text(this.getAttribute('name'))
+                                    .style("font-size", "20px")
+                                    .attr("font-weight", "bold")
+                                    .style('fill', 'red');
+
+                                for (let text_idx=0; text_idx<text_actor.length; text_idx++){
+                                    let text_tmp = text_actor[text_idx];
+                                    const texts = svg.append('text')
+                                        .attr("class", "click_line")
+                                        .attr("x", text_tmp.x)
+                                        .attr("y", text_tmp.y)
+                                        .text(text_tmp.m_name)
+                                        .style("font-size", "9px")
+                                        .attr("font-weight", "bold")
+                                        .style('fill', 'red');
+                                }
+                            }
+                            else {
+                                parent_this.if_selected = false;
+                                parent_this.selected_actor = {};
+                                parent_this.$emit('selectedChange', parent_this.selected_actor);
+                                d3.selectAll("#"+D[0]).transition()
+                                    .duration('50')
+                                    .attr("stroke", parent_this.selected_color);
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('50')
+                                    .attr('opacity', '1');
+                            }
+                        });
+                    ppl_count += 1;
+
                 });
                 
             },

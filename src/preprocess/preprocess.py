@@ -59,10 +59,13 @@ def extract_actor_name(name_ids):
 def save_movie_subset():
     HP = {}
     HP_tmp = {}
-    # # HP
-    # movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
-    # year_start = 2001
-    # year_end = 2011
+    # HP
+    movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    year_start = 2001
+    year_end = 2011
+    count_min = len(movie_ids) - 2
+    avg_rank = 40
+    save_name = 'HP_{}.json'.format(avg_rank)
     # # Marvel 
     # movie_ids = ["tt0371746", "tt1228705", "tt1300854", "tt0800080", "tt0800369", "tt1981115", "tt3501632", "tt10648342", 
     #              "tt0458339", "tt1843866", "tt3498820", "tt0848228", "tt2395427", "tt4154756", "tt4154796", "tt2015381", 
@@ -70,27 +73,36 @@ def save_movie_subset():
     #              "tt1825683", "tt9114286", "tt4154664", "tt3480822", "tt9376612", "tt9032400"]
     # year_start = 2008
     # year_end = 2022
-    # JamesB
-    movie_ids = ["tt0113189", "tt0120347", "tt0143145", "tt0246460", "tt0381061", "tt0830515", "tt1074638", "tt2379713", "tt2382320"]
-    year_start = 1995
-    year_end = 2021
+    # # JamesB
+    # movie_ids = ["tt0113189", "tt0120347", "tt0143145", "tt0246460", "tt0381061", "tt0830515", "tt1074638", "tt2379713", "tt2382320"]
+    # year_start = 1995
+    # year_end = 2021
+    # count_min = 3
+    # avg_rank = 40
+    # save_name = 'JamesB_{}.json'.format(avg_rank)
     # # StarWars
     # movie_ids = ["tt0120915", "tt0121765", "tt0121766", "tt2488496", "tt2527336", "tt2527338", "tt3748528", "tt3778644"]
     # year_start = 1999
     # year_end = 2019
+    # count_min = len(movie_ids) / 2
+    # avg_rank = 39
+    # save_name = 'StarWars_{}.json'.format(avg_rank)
     # # Xmen
     # movie_ids = ["tt0120903", "tt0290334", "tt0376994", "tt0458525", "tt1270798", "tt1430132", "tt1877832", "tt1431045", 
     #              "tt3385516", "tt3315342", "tt5463162", "tt6565702", "tt4682266"]
     # year_start = 2000
     # year_end = 2020
+    # count_min = len(movie_ids) / 2
+    # avg_rank = 40
+    # save_name = 'Xmen_{}.json'.format(avg_rank)
     # # LoR
     # movie_ids = ["tt0120737", "tt0167261", "tt0167260", "tt0903624", "tt1170358", "tt2310332"]
     # year_start = 2001
     # year_end = 2014
+    # count_min = len(movie_ids) - 2
+    # avg_rank = 40
+    # save_name = 'LoR_{}.json'.format(avg_rank)
 
-    avg_rank = 40
-    save_name = 'JamesB_{}.json'.format(avg_rank)
-    count_min = 3
 
     for movie_id in movie_ids:
         try:
@@ -141,12 +153,16 @@ def save_movie_subset():
                     cast = HP_tmp[cast_key]
                     if cast['count'] < count_min:  continue
                     if cast['rank_accu']/cast['count'] > avg_rank:  continue
-                    if cast['id'] in HP.keys(): continue
+                    if cast['id'] in HP.keys(): 
+                        if "actor" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("actor")
+                        continue
                     cast_id = cast['id']
                     HP[cast_id] = {}
                     HP[cast_id]['id'] = cast_id
                     HP[cast_id]['name'] = cast['name']
                     HP[cast_id]['role'] = "actor"
+                    HP[cast_id]['roles'] = ["actor"]
+                    
                     # print(cast['rank_accu']/cast['count'], cast['name'])
                 except Exception as e:
                     print(e)
@@ -204,33 +220,41 @@ def save_movie_subset():
             
             for cast in directors:
                 try:
-                    if cast['id'] in HP.keys(): continue
+                    if cast['id'] in HP.keys(): 
+                        if "director" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("director")
+                        continue
                     if cast['name'] not in dict_non_actors.keys():  continue
                     cast_id = dict_non_actors[cast['name']]["id"]
                     HP[cast_id] = {}
                     HP[cast_id]['id'] = cast_id
                     HP[cast_id]['name'] = cast['name']
                     HP[cast_id]['role'] = "director"
+                    HP[cast_id]['roles'] = ["director"]
                     # print("director: ", cast['name'])
                 except Exception as e:
                     print(e)
                     continue
             for cast in writers:
                 try:
-                    if cast['id'] in HP.keys(): continue
+                    if cast['id'] in HP.keys(): 
+                        if "writer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("writer")
+                        continue
                     if cast['name'] not in dict_non_actors.keys():  continue
                     cast_id = dict_non_actors[cast['name']]["id"]
                     HP[cast_id] = {}
                     HP[cast_id]['id'] = cast_id
                     HP[cast_id]['name'] = cast['name']
                     HP[cast_id]['role'] = "writer"
+                    HP[cast_id]['roles'] = ["writer"]
                     # print("writer: ", cast['name'])
                 except Exception as e:
                     print(e)
                     continue
             for cast in producers:
                 try:
-                    if cast['id'] in HP.keys(): continue
+                    if cast['id'] in HP.keys(): 
+                        if "producer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("producer")
+                        continue
                     if cast['credit'].split(' ')[0] != "producer":  continue
                     if cast['name'] not in dict_non_actors.keys():  continue
                     cast_id = dict_non_actors[cast['name']]["id"]
@@ -238,6 +262,7 @@ def save_movie_subset():
                     HP[cast_id]['id'] = cast_id
                     HP[cast_id]['name'] = cast['name']
                     HP[cast_id]['role'] = "producer"
+                    HP[cast_id]['roles'] = ["producer"]
                     # print(cast['credit'], cast['name'])
                 except Exception as e:
                     print(e)
