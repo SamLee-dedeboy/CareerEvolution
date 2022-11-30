@@ -25,6 +25,7 @@ export class Timeline {
     options: any;
     data: any;
     timeline_margin_top: number;
+    yInterval: any;
 
     public constructor(svgSelector, options) {
         this.svgSelector = svgSelector 
@@ -55,6 +56,9 @@ export class Timeline {
         this.cfg.xScale = d3.scaleBand()
                 .domain(Object.keys(this.cfg.tracks))
                 .range([0, this.svgWidth])
+        this.yInterval = (year, start_year) => {
+            return this.timeline_margin_top + (+year - start_year) * this.cfg.interval
+        }
 
         this.svg
             .attr("width",  this.svgWidth)
@@ -66,10 +70,10 @@ export class Timeline {
 
         this.setupTracks()
         console.log(count_movies(data, 1))
-        data = wrap_node(data)
+        // data = wrap_node(data)
         // data = JSON.parse(JSON.stringify(wrap_node(data)))
         // console.log(count_movies(data, 2))
-        data = merge_by_year(data)
+        data = merge_by_year(this, data)
         // data = JSON.parse(JSON.stringify(merge_by_year(data)))
         // console.log(count_movies(data, 3))
         this.setupTimeline(data)
@@ -136,16 +140,10 @@ export class Timeline {
         let self = this
         const start_year = +data[0].movies[0].year
         sections.each(function(this:any, d) {
-            d3.select(this).selectAll("circle")
+            const nodes = d3.select(this).selectAll("g.node")
                 .data(d.movies)
-                .join("circle")
-                .attr("class", "step")
-                .attr("cx", d => self.getTrackOffset(d))
-                .attr("cy", (d: any) => { 
-                    return self.timeline_margin_top + (+d.year - start_year) * self.cfg.interval
-                })
-                .attr("r", 10)
-                .attr("fill", "black")
+                .join("g")
+                .attr("class", "step node")
                 .style("cursor", "pointer")
                 .on("mouseover", function(this: any, e, d) {
                     this.classList.add("hovered")
@@ -155,6 +153,23 @@ export class Timeline {
                 .on("mouseout", function(this: any, e, d) {
                     this.classList.remove("hovered")
                 })
+            nodes.each(function(this: any, node_data: any) {
+                const movie_data = node_data.movies || [node_data]
+                const offset = self.cfg.xScale.bandwidth() / (movie_data.length+1)
+                console.log(movie_data, d3.select(this))
+                d3.select(this).selectAll("circle.movie")
+                    .data(movie_data)
+                    .join("circle")
+                    .attr("class", "movie")
+                    .attr("cx", (d: any, i) => {
+                        // d.x = self.getTrackOffset(d) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
+                        return d.x
+                    })
+                    .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
+                    .attr("r", 10)
+                    .attr("fill", "black")
+
+            }) 
         })
         // append lables
         sections.each(function(this:any, d) {
@@ -164,9 +179,7 @@ export class Timeline {
                 .join("text")
                 .attr("class", "titles")
                 .attr("x", (d: any) => self.getTitlePosition(d.role))
-                .attr("y", (d: any) => { 
-                    return self.timeline_margin_top + (+d.year - start_year) * self.cfg.interval
-                })
+                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
                 .text((movie_data: any) => {
                     return movie_data.title + " " + movie_data.year 
                 })
@@ -178,9 +191,7 @@ export class Timeline {
                 .join("text")
                 .attr("class", "snippets")
                 .attr("x", (d: any) => self.getSnippetPosition(d.role) + 30)
-                .attr("y", (d: any) => { 
-                    return self.timeline_margin_top + (+d.year - start_year) * self.cfg.interval
-                })
+                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
                 .text((movie_data: any) => {
                     if(!movie_data.snippet || movie_data.snippet.length == 0) return ""
                     return movie_data.snippet.map(snippet => snippet.snippet).join("\n")
@@ -191,7 +202,17 @@ export class Timeline {
         
         // append lines
         let line_data: any[] = []
-        const timeline_movies = data.reduce((movies, step) => movies.concat(step.movies), [])
+        const timeline_movies = data.reduce((movies, step) => {
+            step.movies.forEach(movie_node => {
+                if(movie_node.type == "merged") {
+                    movies = movies.concat(movie_node.movies)
+                } else {
+                    movies.push(movie_node)
+                }
+            })
+            return movies
+        }, [])
+        console.log(timeline_movies)
         timeline_movies.forEach((step, index) => {
             if(index == timeline_movies.length - 1) return
             line_data.push({
@@ -222,9 +243,12 @@ export class Timeline {
             .data(line_data)
             .join("path")
             .attr("class", "connection")
-            .attr("d", d => {
-                const source_x = this.getTrackOffset(d.d1)
-                const target_x = this.getTrackOffset(d.d2)
+            .attr("d", (d, i) => {
+                console.log(d)
+                // const source_x = this.getTrackOffset(d.d1) 
+                // const target_x = this.getTrackOffset(d.d2)
+                const source_x = d.d1.x
+                const target_x = d.d2.x
                 const source_y = this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval 
                 const target_y = this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval
                 const dx = source_x - target_x
@@ -235,11 +259,12 @@ export class Timeline {
                         return `M ${source_x} ${source_y} L ${target_x} ${target_y}`
                     }
                     else {
+                        return `M ${source_x} ${source_y} L ${target_x} ${target_y}`
                         const interval_num = dy/this.cfg.interval
-                        console.log("curving!", interval_num)
+                        console.log("curving!", dy, this.cfg.interval, interval_num)
                         let dpath = `M ${source_x} ${source_y} `
                         Array.from({length: interval_num}, (x, i) => i).forEach(index => {
-                            dpath += `S 0 ${source_y+index*this.cfg.interval/2} ${source_x} ${source_y+index*this.cfg.interval} `
+                            dpath += `Q ${source_x + (index%2 == 0? -1:1)*this.cfg.xScale.bandwidth()/2} ${source_y+(2*index+1)*this.cfg.interval/2} ${source_x} ${source_y+(index+1)*this.cfg.interval} `
                         })
                         dpath += `${target_x} ${target_y}`
                         return dpath
@@ -388,7 +413,7 @@ function wrap_node(data) {
     return data
 }
 
-function merge_by_year(data) {
+function merge_by_year(self, data) {
     data.forEach((stage) => {
         let res_movies: any[] = []
         const paragraph_list = stage.paragraphs
@@ -405,13 +430,14 @@ function merge_by_year(data) {
                 return
             } else {
                 if(year_movies.length == 1) {
+                    year_movies[0].x = self.getTrackOffset(year_movies[0])
                     res_movies = res_movies.concat(year_movies)
                     year_movies = [movie]
                     cur_role = role
                     cur_year = year
                     return
                 }
-                res_movies.push(merge_movies(year_movies, cur_year, cur_role, paragraph_list))
+                res_movies.push(merge_movies(self, year_movies, cur_year, cur_role, paragraph_list))
 
                 // reset everything
                 cur_year = year
@@ -420,9 +446,10 @@ function merge_by_year(data) {
             }
         })
         if(year_movies.length == 1) {
+            year_movies[0].x = self.getTrackOffset(year_movies[0])
             res_movies = res_movies.concat(year_movies)
         } else if(year_movies.length > 1) {
-            res_movies.push(merge_movies(year_movies, cur_year, cur_role, paragraph_list))
+            res_movies.push(merge_movies(self, year_movies, cur_year, cur_role, paragraph_list))
         }
         stage.movies = res_movies
     })
@@ -430,7 +457,7 @@ function merge_by_year(data) {
     return data
 }
 
-function merge_movies(movies, cur_year, cur_role, paragraph_list) {
+function merge_movies(self, movies, cur_year, cur_role, paragraph_list) {
     // merge movie snippets
     let target_paragraph_ids = new Set()
     // get paragraph ids
@@ -440,11 +467,18 @@ function merge_movies(movies, cur_year, cur_role, paragraph_list) {
             target_paragraph_ids.add(snippet.p)
         })
     })
-    // get paragraph texts
-    let target_paragraphs = paragraph_list.filter(p => target_paragraph_ids.has(Object.keys(p)[0]))
-    target_paragraphs = target_paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
-    const sentences = target_paragraphs.join(" ").match( /[^\.!\?]+[\.!\?]+/g ).map(sentence => sentence.trim())
-    const snippets = filter_sentences(movies.map(movie => movie.title), sentences)
+    let snippets = []
+    if(target_paragraph_ids.size != 0) { 
+        // get paragraph texts
+        let target_paragraphs = paragraph_list.filter(p => target_paragraph_ids.has(Object.keys(p)[0]))
+        target_paragraphs = target_paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
+        const sentences = target_paragraphs.join(" ").match( /[^\.!\?]+[\.!\?]+/g ).map(sentence => sentence.trim())
+        snippets = filter_sentences(movies.map(movie => movie.title), sentences)
+    }
+    const offset = self.cfg.xScale.bandwidth() / (movies.length+1)
+    movies.forEach((movie, i) => {
+        movie.x =  self.getTrackOffset(movie) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
+    })
     return {
         "type": "merged",
         "title": movies.map(movie => movie.title).join(", "),
