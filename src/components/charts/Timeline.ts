@@ -195,21 +195,73 @@ export class Timeline {
         timeline_movies.forEach((step, index) => {
             if(index == timeline_movies.length - 1) return
             line_data.push({
+                // d0: timeline_movies[Math.max(index - 1, 0)],
                 d1: timeline_movies[index],
                 d2: timeline_movies[index+1],
+                // d3: timeline_movies[Math.min(index+2, timeline_movies.length-1)],
             })
         })
 
-        canvas.selectAll("line")
+        // canvas.selectAll("line")
+        //     .data(line_data)
+        //     .join("line")
+        //     .attr("class", "connection")
+        //     .attr("x1", d => self.getTrackOffset(d.d1))
+        //     .attr("x2", d => self.getTrackOffset(d.d2))
+        //     .attr("y1", d => this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval)
+        //     .attr("y2", d => this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval)
+        //     .attr("stroke", "black")
+        //     .style("pointer-events", "none")
+
+        // const curve = d3.curveNatural()
+        //     .x((d) => this.getTrackOffset(d))
+        //     .y((d: any) => this.timeline_margin_top + (+d.year - start_year) * this.cfg.interval)
+        //     // .curve(d3.curveMonotoneX);
+
+        canvas.selectAll("path")
             .data(line_data)
-            .join("line")
+            .join("path")
             .attr("class", "connection")
-            .attr("x1", d => self.getTrackOffset(d.d1))
-            .attr("x2", d => self.getTrackOffset(d.d2))
-            .attr("y1", d => this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval)
-            .attr("y2", d => this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval)
+            .attr("d", d => {
+                const source_x = this.getTrackOffset(d.d1)
+                const target_x = this.getTrackOffset(d.d2)
+                const source_y = this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval 
+                const target_y = this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval
+                const dx = source_x - target_x
+                const dy = Math.abs(source_y - target_y)
+                const threshold = 5*this.cfg.interval
+                if(source_x == target_x) {
+                    if(Math.abs(dy) < threshold) {
+                        return `M ${source_x} ${source_y} L ${target_x} ${target_y}`
+                    }
+                    else {
+                        const interval_num = dy/this.cfg.interval
+                        console.log("curving!", interval_num)
+                        let dpath = `M ${source_x} ${source_y} `
+                        Array.from({length: interval_num}, (x, i) => i).forEach(index => {
+                            dpath += `S 0 ${source_y+index*this.cfg.interval/2} ${source_x} ${source_y+index*this.cfg.interval} `
+                        })
+                        dpath += `${target_x} ${target_y}`
+                        return dpath
+                    }
+
+                } else {
+                    return `M ${source_x} ${source_y} C ${source_x} ${target_y} ${target_x} ${source_y} ${target_x} ${target_y}`
+                }
+            })
             .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("fill", "none")
             .style("pointer-events", "none")
+            // .attr("x1", d => self.getTrackOffset(d.d1))
+            // .attr("x2", d => self.getTrackOffset(d.d2))
+            // .attr("y1", d => this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval)
+            // .attr("y2", d => this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval)
+  
+        // canvas.append("path")
+        //   .attr("d", line(timeline_movies))
+        //   .attr("fill", "none")
+        //   .attr("stroke", "black");
     }
 
     getSectionIndex(index) {
@@ -294,7 +346,10 @@ function wrap_node(data) {
                     const empty_node = {
                         "type": "empty",
                         "title": "compact",
-                        "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        // "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        "year": empty_movies[0].year, 
+                        "start_year": empty_movies[0].year,
+                        "end_year": empty_movies[empty_movies.length - 1].year,
                         "role": [cur_role],
                         "movies": empty_movies
                     }
@@ -314,7 +369,10 @@ function wrap_node(data) {
                         "type": "empty",
                         "title": "compact",
                         "movies": empty_movies,
-                        "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        // "year": Math.round(empty_movies.reduce((a, b) => a + +b.year, 0) / empty_movies.length),
+                        "year": empty_movies[0].year, 
+                        "start_year": empty_movies[0].year,
+                        "end_year": empty_movies[empty_movies.length - 1].year,
                         "role": [cur_role]
                     }
                     wrapped_nodes.push(empty_node)
