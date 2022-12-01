@@ -2,6 +2,8 @@ import json
 from collections import defaultdict
 from pprint import pprint
 import re
+
+
 class DataManager():
     def __init__(self):
         self.artist_infos = loadJson(r"data/target_actor_info.json")
@@ -38,21 +40,26 @@ class DataManager():
         stages = {}
         empty_movies = []
         cur_stage = ""
+        stage_index = 0 
+        header_list = []
         for movie_info in movie_infos:
             if not movie_info['snippet']: 
                 empty_movies.append(movie_info)
                 continue
             # create a stage 
-            header = decideHeader(movie_info['snippet'])
+            header = decideHeader(movie_info['snippet'], header_list)
             movie_info['snippet'] = filter_snippets(header, movie_info['snippet'])
-            if header != cur_stage:
+            if header not in header_list:
                 new_stage = {
                     "header": header,
                     "paragraphs": set(),
-                    "movies": empty_movies
+                    "movies": empty_movies,
+                    "stage": stage_index
                 }
+                stage_index += 1
                 stages[header] = new_stage
                 cur_stage = header
+                header_list.append(header)
             else:
                 stages[cur_stage]['movies'] += empty_movies
             stages[header]['movies'].append(movie_info)
@@ -65,14 +72,15 @@ class DataManager():
             stages[cur_stage]["movies"] += empty_movies
 
         # post process
-        stages_list = []
+        stages_list = [None] * stage_index
         for header, stage in stages.items():
             stage['paragraphs'] = list(stage['paragraphs'])
-            stages_list.append({
+            stage_index = stage['stage']
+            stages_list[stage_index] = {
                 "header": header,
                 "paragraphs": self.getParagraphs(artist_id, header, stage['paragraphs']),
                 "movies": stage['movies']
-            })
+            }
         return stages_list
         
     def getParagraphs(self, actor_id, target_header, target_pids):
@@ -101,13 +109,16 @@ def get_movie_count(stages):
 def loadJson(filepath, map=lambda x: x):
     return map(json.load((open(filepath))))
 
-def decideHeader(mentions):
+def decideHeader(mentions, header_list):
     header_snippets_count = {}
     for section in mentions:
         header = section[0]['header']
-        header_snippets_count[header] = len(section)
-
-    return max(header_snippets_count, key=header_snippets_count.get)
+        if header not in header_list or header == header_list[len(header_list)-1]:
+            header_snippets_count[header] = len(section)
+    if not header_snippets_count: 
+        return header_list[len(header_list)-1]
+    else:
+        return max(header_snippets_count, key=header_snippets_count.get)
 def filter_snippets(header, snippets):
     res = [] 
     for section in snippets:
