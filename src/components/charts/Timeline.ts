@@ -190,14 +190,29 @@ export class Timeline {
                 node.each(function(movie_data: any) {
                     console.log(movie_data.year, start_year, self.yInterval(+movie_data.year, start_year))
                     const genres = movie_data.genre.split(",")
+                    const genre_length = genres.length
+                    const icon_width = 30
+                    const icon_height = 30
                     d3.select(this).selectAll("image.genre-icon")
                         .data(genres)
                         .join("image")
-                        .attr("x", movie_data.x)
-                        .attr("y", self.yInterval(+movie_data.year, start_year))
+                        .attr("x", (d, i) => {
+                            const node_center_x = movie_data.x
+                            if(genre_length == 1) return node_center_x - icon_width/2
+                            if(genre_length == 2) return node_center_x - icon_width + i*icon_width 
+                            if(genre_length == 3) return node_center_x - icon_width + i*icon_width/2 
+                            return node_center_x
+                        })
+                        .attr("y", (d, i) => {
+                            const node_center_y = self.yInterval(+movie_data.year, start_year) 
+                            if(genre_length == 1) return node_center_y - icon_height/2
+                            if(genre_length == 2) return node_center_y - icon_height/2
+                            if(genre_length == 3) return node_center_y - icon_height/2 + ((i%2) == 0? 1 : -1)*Math.sqrt(3)/4*icon_width
+                            return node_center_y
+                        })
                         .attr("href", (d) => `${d}.svg`)
-                        .attr("width", "30px")
-                        .attr("height", "30px")
+                        .attr("width", `${icon_width}px`)
+                        .attr("height", `${icon_height}px`)
                 })
                 // node.append("circle")
                 //         .attr("cx", (d: any) => d.x)
