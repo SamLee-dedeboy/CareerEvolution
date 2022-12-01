@@ -17,9 +17,9 @@ const stage_descriptions: Ref<any> = ref(undefined)
 vue.onMounted(() => {
     get_artists()
     // target_artist.value = 'nm0000375'
-    // target_artist.value = 'nm0413168'
+    target_artist.value = 'nm0413168'
     // target_artist.value = 'nm0005351'
-    target_artist.value = 'nm0426059'
+    // target_artist.value = 'nm0426059'
     get_career(target_artist.value)
 })
 

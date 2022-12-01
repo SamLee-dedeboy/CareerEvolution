@@ -76,6 +76,8 @@ class DataManager():
         for header, stage in stages.items():
             stage['paragraphs'] = list(stage['paragraphs'])
             stage_index = stage['stage']
+            for movie in stage['movies']:
+                movie['stage'] = stage_index
             stages_list[stage_index] = {
                 "header": header,
                 "paragraphs": self.getParagraphs(artist_id, header, stage['paragraphs']),

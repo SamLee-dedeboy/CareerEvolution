@@ -41,6 +41,7 @@ def main():
         # for credit_file in glob.glob(r'film_credits_w_ids/*.json'):
         #     credits = json.load(open(credit_file))
         #     movie_credits.append(credits)
+        # add_simple_table_ids()
 
         # movie_subset_file = open(r'movie_subsets.txt')
         # subset_movie_ids = list(map(lambda id: id.strip(), movie_subset_file.readlines()))
@@ -443,10 +444,11 @@ def scrape_actor_works(actor_id_list):
                 return
 
 def add_simple_table_ids():
-    names = tsv_to_dicts(r'name.tsv') 
-    print("constructing dict...")
-    name_id_dict = {name['primaryName']: name['nconst'] for name in names}
-    print("construct dict done")
+    # names = tsv_to_dicts(r'name.tsv') 
+    # print("constructing dict...")
+    # print("construct dict done")
+    target_actors = json.load(open(r'target_actor_info.json'))
+    name_id_dict = {actor['name']: actor['id'] for actor in target_actors}
     movie_credits = []
     for credit_file in glob.glob(r'film_credits/*.json'):
         credits = json.load(open(credit_file))

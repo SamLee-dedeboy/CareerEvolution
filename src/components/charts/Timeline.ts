@@ -51,7 +51,7 @@ export class Timeline {
         const timeline_length = data.reduce((total, step) => total + step.movies.length, 0)
         console.log("timeline length", timeline_length)
         const years = data.reduce((years, step)=> years.concat(step.movies.map(movie => +movie.year)), [])
-        this.contentHeight = (Math.max(...years) - Math.min(...years) + 2) * this.cfg.interval
+        this.contentHeight = (Math.max(...years) - Math.min(...years) + 2) * (this.cfg.interval + this.cfg.interval/2)
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
 
@@ -59,8 +59,8 @@ export class Timeline {
         this.cfg.xScale = d3.scaleBand()
                 .domain(Object.keys(this.cfg.tracks))
                 .range([0, this.cfg.width])
-        this.yInterval = (year, start_year) => {
-            return this.timeline_margin_top + (+year - start_year) * this.cfg.interval
+        this.yInterval = (year, start_year, index=0) => {
+            return this.timeline_margin_top + (+year - start_year) * this.cfg.interval + index*this.cfg.interval/2
         }
 
         this.svg
@@ -143,36 +143,13 @@ export class Timeline {
 
         let self = this
         const start_year = +data[0].movies[0].year
-        sections.each(function(this:any, d) {
+        sections.each(function(this:any, d:any, stage_index) {
             const steps = d3.select(this).selectAll("g.step")
                 .data(d.movies)
                 .join("g")
                 .attr("class", "step")
             steps.each(function(this: any, node_data: any) {
                 const movie_data = node_data.movies || [node_data]
-                const offset = self.cfg.xScale.bandwidth() / (movie_data.length+1)
-                // d3.select(this).selectAll("circle.node")
-                //     .data(movie_data)
-                //     .join("circle")
-                //     .attr("class", "node")
-                //     .attr("cx", (d: any, i) => {
-                //         // d.x = self.getTrackOffset(d) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
-                //         return d.x
-                //     })
-                //     .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
-                //     .attr("r", 10)
-                //     .attr("fill", "black")
-                //     .style("cursor", "pointer")
-                //     .on("mouseover", function(this: any, e, d) {
-                //         this.classList.add("hovered")
-                //         d3.select(this).attr("fill", "white")
-                //         // TODO: animate hover effect in css
-
-                //     })
-                //     .on("mouseout", function(this: any, e, d) {
-                //         this.classList.remove("hovered")
-                //         d3.select(this).attr("fill", "black")
-                //     })
                 const year = d3.select(this).selectAll("g.node")
                     .data(movie_data)
                     .style("cursor", "pointer")
@@ -188,7 +165,6 @@ export class Timeline {
                     })
                 const node = year.enter().append("g").attr("class", "node")
                 node.each(function(movie_data: any) {
-                    console.log(movie_data.year, start_year, self.yInterval(+movie_data.year, start_year))
                     const genres = movie_data.genre.split(",")
                     const genre_length = genres.length
                     const icon_width = 30
@@ -204,7 +180,7 @@ export class Timeline {
                             return node_center_x
                         })
                         .attr("y", (d, i) => {
-                            const node_center_y = self.yInterval(+movie_data.year, start_year) 
+                            const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
                             if(genre_length == 1) return node_center_y - icon_height/2
                             if(genre_length == 2) return node_center_y - icon_height/2
                             if(genre_length == 3) return node_center_y - icon_height/2 + ((i%2) == 0? 1 : -1)*Math.sqrt(3)/4*icon_width
@@ -214,67 +190,35 @@ export class Timeline {
                         .attr("width", `${icon_width}px`)
                         .attr("height", `${icon_height}px`)
                 })
-                // node.append("circle")
-                //         .attr("cx", (d: any) => d.x)
-                //         .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
-                //         .attr("r", 10)
-                //         .attr("fill", "black")
-                // node.append("rect")
-                //         .attr("class", "test-rect")
 
-                // const genres = movie_data.genre.split(",")
-                // d3.select(this).selectAll("img.movie")
-                //     .data(genres)
-                //     .join("img")
-                //     .attr("class", "genre-icon")
-                //     .attr("x", (d: any) => d.x)
-                //     .attr("y", (d: any) => self.yInterval(+d.year, start_year))
-                //     .attr("width", "30px")
-                //     .attr("height", "30px")
-                //     .attr("src", (d) => `${d}.svg`)
+                // titles
+                console.log(movie_data)
+                d3.select(this).append("text")
+                    .attr("class", "titles")
+                    .attr("x", self.getTitlePosition(movie_data[0].role))
+                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .text(movie_data.map(movie => movie.title).join(", "))
+                    .style("pointer-events", "none")
+                    .call(wrap, self.cfg.xScale.bandwidth()/2)
 
+                // years
+                d3.select(this).append("text")
+                    .attr("class", "years")
+                    .attr("x", -50)
+                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .text(movie_data[0].year + " - ")
+                    .call(wrap, 100)
+
+                // snippets
+                const snippets = movie_data.map(movie => movie.snippet.map(snippet => snippet.snippet).join(" ") || "")
+                d3.select(this).append("text")
+                    .attr("class", "snippets")
+                    .attr("x", self.getSnippetPosition(movie_data[0].role) + 30)
+                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .style("pointer-events", "none")
+                    .text(snippets)
+                    .call(wrap, self.getWrapWidth(movie_data[0].role))
             }) 
-        })
-        // append lables
-        sections.each(function(this:any, d) {
-            // titles
-            d3.select(this).selectAll("text.titles")
-                .data(d.movies)
-                .join("text")
-                .attr("class", "titles")
-                .attr("x", (d: any) => self.getTitlePosition(d.role))
-                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
-                .text((movie_data: any) => {
-                    return movie_data.title
-                })
-                .style("pointer-events", "none")
-                .call(wrap, self.cfg.xScale.bandwidth()/2)
-                
-            // years
-            d3.select(this).selectAll("text.years")
-                .data(d.movies)
-                .join("text")
-                .attr("class", "years")
-                .attr("x", -50)
-                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
-                .text((movie_data: any) => {
-                    return movie_data.year + " - "
-                })
-                .call(wrap, 100)
-
-            // snippets
-            d3.select(this).selectAll("text.snippets")
-                .data(d.movies)
-                .join("text")
-                .attr("class", "snippets")
-                .attr("x", (d: any) => self.getSnippetPosition(d.role) + 30)
-                .attr("y", (d: any) => self.yInterval(+d.year, start_year))
-                .style("pointer-events", "none")
-                .text((movie_data: any) => {
-                    if(!movie_data.snippet || movie_data.snippet.length == 0) return ""
-                    return movie_data.snippet.map(snippet => snippet.snippet).join("\n")
-                })
-                .call(wrap, self.cfg.xScale.bandwidth() * 3)
         })
 
         
@@ -326,8 +270,10 @@ export class Timeline {
                 // const target_x = this.getTrackOffset(d.d2)
                 const source_x = d.d1.x
                 const target_x = d.d2.x
-                const source_y = this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval 
-                const target_y = this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval
+                // const source_y = this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval 
+                // const target_y = this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval
+                const source_y = this.yInterval(+d.d1.year, start_year, d.d1.stage)
+                const target_y = this.yInterval(+d.d2.year, start_year, d.d2.stage)
                 const dx = source_x - target_x
                 const dy = Math.abs(source_y - target_y)
                 const threshold = 5*this.cfg.interval
@@ -385,9 +331,24 @@ export class Timeline {
     }
 
     getSnippetPosition(roles) {
-        const xTranslate = (roles) => this.cfg.xScale(prioritize_roles(roles)) + this.cfg.xScale.bandwidth()/2 
-        return xTranslate(roles)
+        const major_role = prioritize_roles(roles)
+        if(major_role == "actor")  return this.cfg.xScale("producer") 
+        if(major_role == "producer") return this.cfg.xScale("director") 
+        if(major_role == "director") return this.cfg.xScale("actor") 
+        if(major_role == "writer") return this.cfg.xScale("actor") 
+        return this.cfg.xScale("producer") - this.cfg.xScale.bandwidth()/2
     }
+
+    getWrapWidth(roles) {
+        const major_role = prioritize_roles(roles)
+        if(major_role == "actor")  return this.cfg.xScale.bandwidth()*2.5
+        if(major_role == "producer") return this.cfg.xScale.bandwidth()*1.5
+        if(major_role == "director") return this.cfg.xScale.bandwidth()*1.5
+        if(major_role == "writer")  return this.cfg.xScale.bandwidth()*2.5
+        return this.cfg.xScale.bandwidth()
+
+    }
+
     getTrackOffset(d) {
         return this.cfg.xScale(prioritize_roles(d.role)) + this.cfg.xScale.bandwidth()/2 
     }
