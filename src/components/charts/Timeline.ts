@@ -47,9 +47,11 @@ export class Timeline {
 			}
 		}
         // calculate height of the view from timeline length
+        console.log(data)
         const timeline_length = data.reduce((total, step) => total + step.movies.length, 0)
         console.log("timeline length", timeline_length)
-        this.contentHeight = timeline_length * this.cfg.interval
+        const years = data.reduce((years, step)=> years.concat(step.movies.map(movie => +movie.year)), [])
+        this.contentHeight = (Math.max(...years) - Math.min(...years) + 2) * this.cfg.interval
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
 
@@ -186,8 +188,8 @@ export class Timeline {
                     })
                 const node = year.enter().append("g").attr("class", "node")
                 node.each(function(movie_data: any) {
+                    console.log(movie_data.year, start_year, self.yInterval(+movie_data.year, start_year))
                     const genres = movie_data.genre.split(",")
-                    console.log(movie_data.title, genres)
                     d3.select(this).selectAll("image.genre-icon")
                         .data(genres)
                         .join("image")
@@ -600,7 +602,6 @@ function count_movies(data, flag) {
 }
 
 function prioritize_roles(roles) {
-    console.log(roles)
     if(roles.length == 1) return roles[0]
     else return roles.sort(compare_roles)[0]
 }
