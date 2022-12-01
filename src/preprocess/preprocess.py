@@ -49,7 +49,9 @@ def main():
         # actor_info_list = json.load(open(r'target_actor_info.json'))
         # scrape_career(actor_list=actor_info_list)
         # generate_movie_pool()
-        add_snippets()
+        # add_snippets()
+        genre_dict = json.load(open(r'genre_dict.json'))
+        print(genre_dict.keys())
         
 
 def tsv_to_dicts(csvFilePath):
@@ -306,6 +308,8 @@ def filter_movie(movie_id_dict, english_movie_ids):
         if genre_check: continue
         genre_set.update(genres)
         kept.append(movie)
+    print(genre_set)
+    return
     i = 0
     for kept_movie in kept:
         i += 1

@@ -9,9 +9,9 @@
                 <h4 class='section-header'> {{ section.header }} </h4>
                 <div class='section-description'> {{ section.description }} </div>
             </div>
-
         </div>
         <svg :class="svgClass"></svg>
+        <!-- <img src=action.svg class=action> -->
     </div>
 </template>
 <script setup lang="ts">
@@ -99,5 +99,17 @@ function setupScroller() {
   text-align: center;
   justify-content: center;
   margin-left: 15px;
+}
+
+.action {
+    filter: invert(21%) sepia(19%) saturate(4450%) hue-rotate(315deg) brightness(93%) contrast(91%);
+    /* background-color: red;
+    mask: url(action.svg) no-repeat center / contain;
+    -webkit-mask: url(action.svg) no-repeat center / contain; */
+    position:absolute;
+    left: 1%;
+    top: 1%;
+    width: 50px;
+    height: 50px;
 }
 </style>

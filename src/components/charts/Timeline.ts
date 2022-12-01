@@ -48,6 +48,7 @@ export class Timeline {
 		}
         // calculate height of the view from timeline length
         const timeline_length = data.reduce((total, step) => total + step.movies.length, 0)
+        console.log("timeline length", timeline_length)
         this.contentHeight = timeline_length * this.cfg.interval
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
@@ -63,6 +64,7 @@ export class Timeline {
         this.svg
             .attr("width",  this.svgWidth)
             .attr("height", this.svgHeight)
+            .style("overflow", "visible")
 
 		this.svg.append("g")
             .attr("class", "canvas")
@@ -140,34 +142,79 @@ export class Timeline {
         let self = this
         const start_year = +data[0].movies[0].year
         sections.each(function(this:any, d) {
-            const nodes = d3.select(this).selectAll("g.node")
+            const steps = d3.select(this).selectAll("g.step")
                 .data(d.movies)
                 .join("g")
-                .attr("class", "step node")
-                .style("cursor", "pointer")
-                .on("mouseover", function(this: any, e, d) {
-                    this.classList.add("hovered")
-                    // TODO: animate hover effect in css
-
-                })
-                .on("mouseout", function(this: any, e, d) {
-                    this.classList.remove("hovered")
-                })
-            nodes.each(function(this: any, node_data: any) {
+                .attr("class", "step")
+            steps.each(function(this: any, node_data: any) {
                 const movie_data = node_data.movies || [node_data]
                 const offset = self.cfg.xScale.bandwidth() / (movie_data.length+1)
-                console.log(movie_data, d3.select(this))
-                d3.select(this).selectAll("circle.movie")
+                // d3.select(this).selectAll("circle.node")
+                //     .data(movie_data)
+                //     .join("circle")
+                //     .attr("class", "node")
+                //     .attr("cx", (d: any, i) => {
+                //         // d.x = self.getTrackOffset(d) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
+                //         return d.x
+                //     })
+                //     .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
+                //     .attr("r", 10)
+                //     .attr("fill", "black")
+                //     .style("cursor", "pointer")
+                //     .on("mouseover", function(this: any, e, d) {
+                //         this.classList.add("hovered")
+                //         d3.select(this).attr("fill", "white")
+                //         // TODO: animate hover effect in css
+
+                //     })
+                //     .on("mouseout", function(this: any, e, d) {
+                //         this.classList.remove("hovered")
+                //         d3.select(this).attr("fill", "black")
+                //     })
+                const year = d3.select(this).selectAll("g.node")
                     .data(movie_data)
-                    .join("circle")
-                    .attr("class", "movie")
-                    .attr("cx", (d: any, i) => {
-                        // d.x = self.getTrackOffset(d) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
-                        return d.x
+                    .style("cursor", "pointer")
+                    .on("mouseover", function(this: any, e, d) {
+                        this.classList.add("hovered")
+                        d3.select(this).attr("fill", "white")
+                        // TODO: animate hover effect in css
+
                     })
-                    .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
-                    .attr("r", 10)
-                    .attr("fill", "black")
+                    .on("mouseout", function(this: any, e, d) {
+                        this.classList.remove("hovered")
+                        d3.select(this).attr("fill", "black")
+                    })
+                const node = year.enter().append("g").attr("class", "node")
+                node.each(function(movie_data: any) {
+                    const genres = movie_data.genre.split(",")
+                    console.log(movie_data.title, genres)
+                    d3.select(this).selectAll("image.genre-icon")
+                        .data(genres)
+                        .join("image")
+                        .attr("x", movie_data.x)
+                        .attr("y", self.yInterval(+movie_data.year, start_year))
+                        .attr("href", (d) => `${d}.svg`)
+                        .attr("width", "30px")
+                        .attr("height", "30px")
+                })
+                // node.append("circle")
+                //         .attr("cx", (d: any) => d.x)
+                //         .attr("cy", (d: any) => self.yInterval(+d.year, start_year))
+                //         .attr("r", 10)
+                //         .attr("fill", "black")
+                // node.append("rect")
+                //         .attr("class", "test-rect")
+
+                // const genres = movie_data.genre.split(",")
+                // d3.select(this).selectAll("img.movie")
+                //     .data(genres)
+                //     .join("img")
+                //     .attr("class", "genre-icon")
+                //     .attr("x", (d: any) => d.x)
+                //     .attr("y", (d: any) => self.yInterval(+d.year, start_year))
+                //     .attr("width", "30px")
+                //     .attr("height", "30px")
+                //     .attr("src", (d) => `${d}.svg`)
 
             }) 
         })
@@ -183,6 +230,7 @@ export class Timeline {
                 .text((movie_data: any) => {
                     return movie_data.title
                 })
+                .style("pointer-events", "none")
                 .call(wrap, self.cfg.xScale.bandwidth()/2)
                 
             // years
@@ -204,6 +252,7 @@ export class Timeline {
                 .attr("class", "snippets")
                 .attr("x", (d: any) => self.getSnippetPosition(d.role) + 30)
                 .attr("y", (d: any) => self.yInterval(+d.year, start_year))
+                .style("pointer-events", "none")
                 .text((movie_data: any) => {
                     if(!movie_data.snippet || movie_data.snippet.length == 0) return ""
                     return movie_data.snippet.map(snippet => snippet.snippet).join("\n")
@@ -256,7 +305,6 @@ export class Timeline {
             .join("path")
             .attr("class", "connection")
             .attr("d", (d, i) => {
-                console.log(d)
                 // const source_x = this.getTrackOffset(d.d1) 
                 // const target_x = this.getTrackOffset(d.d2)
                 const source_x = d.d1.x
@@ -552,6 +600,7 @@ function count_movies(data, flag) {
 }
 
 function prioritize_roles(roles) {
+    console.log(roles)
     if(roles.length == 1) return roles[0]
     else return roles.sort(compare_roles)[0]
 }
