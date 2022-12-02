@@ -245,11 +245,15 @@
                                 d3.select("#count_"+this.getAttribute("count")).transition()
                                     .duration('0')
                                     .attr('opacity', '1');
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('0')
+                                    .attr('opacity', '0.5');
                                 d3.select(this).raise();
                                 d3.select(this).transition()
                                     .duration('0')
                                     .attr('stroke-width', 3)
-                                    .attr('stroke', 'red');
+                                    .attr('opacity', '1');
+                                    // .attr('stroke', 'red');
                                 
                                 svg.append("text")
                                     .attr("class", "click_line")
@@ -258,7 +262,8 @@
                                     .text(this.getAttribute('name') + " (" + this.getAttribute('roles') + ")")
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
-                                    .style('fill', 'red');
+                                    .style('fill', this.getAttribute("stroke"));
+                                    // .style('fill', 'red');
                             }
                             else;
                         })
@@ -268,6 +273,9 @@
                                 d3.select("#count_"+this.getAttribute("count")).transition()
                                     .duration('0')
                                     .attr('opacity', '0.3');
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('0')
+                                    .attr('opacity', '1');
                                 d3.selectAll(".click_line").remove();
                                 d3.select(this).transition()
                                     .duration('0')
@@ -292,8 +300,8 @@
                                 d3.select(this).transition()
                                     .duration('50')
                                     .attr('stroke-width', 3)
-                                    .attr('stroke', 'red')
                                     .attr('opacity', '1');
+                                    // .attr('stroke', 'red')
                                 
                                 svg.append("text")
                                     .attr("class", "click_line")
@@ -302,7 +310,8 @@
                                     .text(this.getAttribute('name'))
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
-                                    .style('fill', 'red');
+                                    .style('fill', parent_this.selected_color);
+                                    // .style('fill', 'red');
 
                                 for (let text_idx=0; text_idx<text_actor.length; text_idx++){
                                     let text_tmp = text_actor[text_idx];
@@ -313,7 +322,8 @@
                                         .text(text_tmp.m_name)
                                         .style("font-size", "9px")
                                         .attr("font-weight", "bold")
-                                        .style('fill', 'red');
+                                        .style('fill', parent_this.selected_color);
+                                        // .style('fill', 'red');
                                 }
                             }
                             else {
@@ -345,6 +355,9 @@
                         .on('mouseover', function(d){
                             if (parent_this.if_selected == false){
                                 parent_this.selected_color = this.getAttribute("color");
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('0')
+                                    .attr('opacity', '0.5');
                                 d3.select(this).transition()
                                     .duration('0')
                                     .attr('opacity', '1');
@@ -353,7 +366,8 @@
                                 d3.select("#"+D[0]).transition()
                                     .duration('0')
                                     .attr('stroke-width', 3)
-                                    .attr('stroke', 'red');
+                                    .attr('opacity', '1');
+                                    // .attr('stroke', 'red');
                                 
                                 svg.append("text")
                                     .attr("class", "click_line")
@@ -362,12 +376,15 @@
                                     .text(this.getAttribute('name') + " (" + this.getAttribute('roles') + ")")
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
-                                    .style('fill', 'red');
+                                    .style('fill', this.getAttribute("color"));
                             }
                             else;
                         })
                         .on('mouseout', function(d, i){
                             if (parent_this.if_selected == false) {
+                                d3.selectAll(".all_lines").transition()
+                                    .duration('0')
+                                    .attr('opacity', '1');
                                 d3.select(this).transition()
                                     .duration('0')
                                     .attr('opacity', '0.3');
@@ -396,8 +413,8 @@
                                 d3.select("#"+D[0]).transition()
                                     .duration('50')
                                     .attr('stroke-width', 3)
-                                    .attr('stroke', 'red')
                                     .attr('opacity', '1');
+                                    // .attr('stroke', 'red')
                                 
                                 svg.append("text")
                                     .attr("class", "click_line")
@@ -406,7 +423,7 @@
                                     .text(this.getAttribute('name'))
                                     .style("font-size", "20px")
                                     .attr("font-weight", "bold")
-                                    .style('fill', 'red');
+                                    .style('fill', parent_this.selected_color);
 
                                 for (let text_idx=0; text_idx<text_actor.length; text_idx++){
                                     let text_tmp = text_actor[text_idx];
@@ -417,7 +434,7 @@
                                         .text(text_tmp.m_name)
                                         .style("font-size", "9px")
                                         .attr("font-weight", "bold")
-                                        .style('fill', 'red');
+                                        .style('fill', parent_this.selected_color);
                                 }
                             }
                             else {
