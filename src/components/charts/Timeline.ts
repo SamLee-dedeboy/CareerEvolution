@@ -8,9 +8,9 @@ interface Margin {
     right: number
 }
 export class TimelineConfig {
-    width: number = 700  
+    width: number = 400  
 	height: number = 600
-	margin: Margin = {top: 20, right: 20, bottom: 20, left: 100}
+	margin: Margin = {top: 50, right: 20, bottom: 20, left: 400}
     interval: number = 80
     xScale: any;
     tracks: any;
@@ -26,6 +26,7 @@ export class Timeline {
     data: any;
     timeline_margin_top: number;
     yInterval: any;
+    iconScale: any;
 
     public constructor(svgSelector, options) {
         this.svgSelector = svgSelector 
@@ -52,8 +53,21 @@ export class Timeline {
         console.log("timeline length", timeline_length)
         const years = data.reduce((years, step)=> years.concat(step.movies.map(movie => +movie.year)), [])
         this.contentHeight = (Math.max(...years) - Math.min(...years) + 2) * (this.cfg.interval + this.cfg.interval/2)
+        console.log(this.cfg.width, this.cfg.margin.left, this.cfg.margin.right)
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
+
+        // re-arrange data into flat array
+        const timeline_movies = data.reduce((movies, step) => {
+            step.movies.forEach(movie_node => {
+                if(movie_node.type == "merged") {
+                    movies = movies.concat(movie_node.movies)
+                } else {
+                    movies.push(movie_node)
+                }
+            })
+            return movies
+        }, [])
 
         // setup scales
         this.cfg.xScale = d3.scaleBand()
@@ -62,6 +76,10 @@ export class Timeline {
         this.yInterval = (year, start_year, index=0) => {
             return this.timeline_margin_top + (+year - start_year) * this.cfg.interval + index*this.cfg.interval/2
         }
+        const movie_impact = timeline_movies.map(movie => +movie.votes*(+movie.rating)) 
+        this.iconScale = d3.scaleLinear()
+            .domain([Math.min(...movie_impact), Math.max(...movie_impact)])
+            .range([20, 40])
 
         this.svg
             .attr("width",  this.svgWidth)
@@ -80,7 +98,7 @@ export class Timeline {
         data = merge_by_year(this, data)
         // data = JSON.parse(JSON.stringify(merge_by_year(data)))
         // console.log(count_movies(data, 3))
-        this.setupTimeline(data)
+        this.setupTimeline(data, timeline_movies)
 
     }
 
@@ -129,112 +147,12 @@ export class Timeline {
                 .attr("fill", track_color)
         })
     }
-    setupTimeline(data) {
+    setupTimeline(data, timeline_movies) {
         const canvas = this.svg.select("g.canvas")
-
-        // TODO: fix multiple roles
-        const sections_container = canvas.append("g").attr("class", "sections-container")
-        // append sections
-        const sections = sections_container.selectAll("g")
-            .data(data)
-            .join("g")
-            .attr("class", "stage")
-            .attr("id", (d, i) => `stage_${i}`)
-
-        let self = this
         const start_year = +data[0].movies[0].year
-        sections.each(function(this:any, d:any, stage_index) {
-            const steps = d3.select(this).selectAll("g.step")
-                .data(d.movies)
-                .join("g")
-                .attr("class", "step")
-            steps.each(function(this: any, node_data: any) {
-                const movie_data = node_data.movies || [node_data]
-                const year = d3.select(this).selectAll("g.node")
-                    .data(movie_data)
-                    .style("cursor", "pointer")
-                    .on("mouseover", function(this: any, e, d) {
-                        this.classList.add("hovered")
-                        d3.select(this).attr("fill", "white")
-                        // TODO: animate hover effect in css
 
-                    })
-                    .on("mouseout", function(this: any, e, d) {
-                        this.classList.remove("hovered")
-                        d3.select(this).attr("fill", "black")
-                    })
-                const node = year.enter().append("g").attr("class", "node")
-                node.each(function(movie_data: any) {
-                    const genres = movie_data.genre.split(",")
-                    const genre_length = genres.length
-                    const icon_width = 30
-                    const icon_height = 30
-                    d3.select(this).selectAll("image.genre-icon")
-                        .data(genres)
-                        .join("image")
-                        .attr("x", (d, i) => {
-                            const node_center_x = movie_data.x
-                            if(genre_length == 1) return node_center_x - icon_width/2
-                            if(genre_length == 2) return node_center_x - icon_width + i*icon_width 
-                            if(genre_length == 3) return node_center_x - icon_width + i*icon_width/2 
-                            return node_center_x
-                        })
-                        .attr("y", (d, i) => {
-                            const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
-                            if(genre_length == 1) return node_center_y - icon_height/2
-                            if(genre_length == 2) return node_center_y - icon_height/2
-                            if(genre_length == 3) return node_center_y - icon_height/2 + ((i%2) == 0? 1 : -1)*Math.sqrt(3)/4*icon_width
-                            return node_center_y
-                        })
-                        .attr("href", (d) => `${d}.svg`)
-                        .attr("width", `${icon_width}px`)
-                        .attr("height", `${icon_height}px`)
-                })
-
-                // titles
-                console.log(movie_data)
-                d3.select(this).append("text")
-                    .attr("class", "titles")
-                    .attr("x", self.getTitlePosition(movie_data[0].role))
-                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
-                    .text(movie_data.map(movie => movie.title).join(", "))
-                    .style("pointer-events", "none")
-                    .call(wrap, self.cfg.xScale.bandwidth()/2)
-
-                // years
-                d3.select(this).append("text")
-                    .attr("class", "years")
-                    .attr("x", -50)
-                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
-                    .text(movie_data[0].year + " - ")
-                    .call(wrap, 100)
-
-                // snippets
-                const snippets = movie_data.map(movie => movie.snippet.map(snippet => snippet.snippet).join(" ") || "")
-                d3.select(this).append("text")
-                    .attr("class", "snippets")
-                    .attr("x", self.getSnippetPosition(movie_data[0].role) + 30)
-                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
-                    .style("pointer-events", "none")
-                    .text(snippets)
-                    .call(wrap, self.getWrapWidth(movie_data[0].role))
-            }) 
-        })
-
-        
         // append lines
         let line_data: any[] = []
-        const timeline_movies = data.reduce((movies, step) => {
-            step.movies.forEach(movie_node => {
-                if(movie_node.type == "merged") {
-                    movies = movies.concat(movie_node.movies)
-                } else {
-                    movies.push(movie_node)
-                }
-            })
-            return movies
-        }, [])
-        console.log(timeline_movies)
         timeline_movies.forEach((step, index) => {
             if(index == timeline_movies.length - 1) return
             line_data.push({
@@ -244,22 +162,6 @@ export class Timeline {
                 // d3: timeline_movies[Math.min(index+2, timeline_movies.length-1)],
             })
         })
-
-        // canvas.selectAll("line")
-        //     .data(line_data)
-        //     .join("line")
-        //     .attr("class", "connection")
-        //     .attr("x1", d => self.getTrackOffset(d.d1))
-        //     .attr("x2", d => self.getTrackOffset(d.d2))
-        //     .attr("y1", d => this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval)
-        //     .attr("y2", d => this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval)
-        //     .attr("stroke", "black")
-        //     .style("pointer-events", "none")
-
-        // const curve = d3.curveNatural()
-        //     .x((d) => this.getTrackOffset(d))
-        //     .y((d: any) => this.timeline_margin_top + (+d.year - start_year) * this.cfg.interval)
-        //     // .curve(d3.curveMonotoneX);
 
         canvas.selectAll("path")
             .data(line_data)
@@ -301,15 +203,95 @@ export class Timeline {
             .attr("stroke-width", 1)
             .attr("fill", "none")
             .style("pointer-events", "none")
-            // .attr("x1", d => self.getTrackOffset(d.d1))
-            // .attr("x2", d => self.getTrackOffset(d.d2))
-            // .attr("y1", d => this.timeline_margin_top + (+d.d1.year - start_year) * this.cfg.interval)
-            // .attr("y2", d => this.timeline_margin_top + (+d.d2.year - start_year) * this.cfg.interval)
-  
-        // canvas.append("path")
-        //   .attr("d", line(timeline_movies))
-        //   .attr("fill", "none")
-        //   .attr("stroke", "black");
+        
+        const sections_container = canvas.append("g").attr("class", "sections-container").raise()
+        // append sections
+        const sections = sections_container.selectAll("g")
+            .data(data)
+            .join("g")
+            .attr("class", "stage")
+            .attr("id", (d, i) => `stage_${i}`)
+
+        let self = this
+        sections.each(function(this:any, d:any, stage_index) {
+            const steps = d3.select(this).selectAll("g.step")
+                .data(d.movies)
+                .join("g")
+                .attr("class", "step")
+            steps.each(function(this: any, node_data: any) {
+                const movie_data = node_data.movies || [node_data]
+                const year = d3.select(this).selectAll("g.node")
+                    .data(movie_data)
+                    .style("cursor", "pointer")
+                    .on("mouseover", function(this: any, e, d) {
+                        this.classList.add("hovered")
+                        d3.select(this).attr("fill", "white")
+                        // TODO: animate hover effect in css
+
+                    })
+                    .on("mouseout", function(this: any, e, d) {
+                        this.classList.remove("hovered")
+                        d3.select(this).attr("fill", "black")
+                    })
+                const node = year.enter().append("g").attr("class", "node")
+                node.each(function(movie_data: any) {
+                    const genres = movie_data.genre.split(",")
+                    const genre_length = genres.length
+                    const icon_size = self.iconScale(+movie_data.votes*(+movie_data.rating))
+                    d3.select(this).selectAll("image.genre-icon")
+                        .data(genres)
+                        .join("image")
+                        .attr("x", (d, i) => {
+                            const node_center_x = movie_data.x
+                            if(genre_length == 1) return node_center_x - icon_size/2
+                            if(genre_length == 2) return node_center_x - icon_size + i*icon_size 
+                            if(genre_length == 3) return node_center_x - icon_size + i*icon_size/2 
+                            return node_center_x
+                        })
+                        .attr("y", (d, i) => {
+                            const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
+                            if(genre_length == 1) return node_center_y - icon_size/2
+                            if(genre_length == 2) return node_center_y - icon_size/2
+                            if(genre_length == 3) return node_center_y - icon_size/2 + ((i%2) == 0? 1 : -1)*Math.sqrt(3)/4*icon_size
+                            return node_center_y
+                        })
+                        .attr("href", (d) => `${d}.svg`)
+                        .attr("width", `${icon_size}px`)
+                        .attr("height", `${icon_size}px`)
+                })
+
+                // titles
+                d3.select(this).selectAll("text.titles")
+                    .data(movie_data.map(movie => movie.title))
+                    .join("text")
+                    .attr("class", "titles")
+                    .attr("x", -200)
+                    .attr("y", (d, i) => self.yInterval(+movie_data[0].year, start_year, stage_index) + i*20) 
+                    .text((d:any) => d)
+                    .style("pointer-events", "none")
+                    .call(wrap, 200)
+
+                // years
+                d3.select(this).append("text")
+                    .attr("class", "years")
+                    .attr("x", -250)
+                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .text(movie_data[0].year + " - ")
+                    .call(wrap, 100)
+
+                // snippets
+                const snippets = movie_data.map(movie => movie.snippet.map(snippet => snippet.snippet).join(" ") || "")
+                d3.select(this).append("text")
+                    .attr("class", "snippets")
+                    .attr("x", self.getSnippetPosition(movie_data[0].role) + 30)
+                    .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .style("pointer-events", "none")
+                    .text(snippets)
+                    .call(wrap, self.getWrapWidth(movie_data[0].role))
+            }) 
+        })
+
+        
     }
 
     getSectionIndex(index) {
@@ -497,36 +479,45 @@ function merge_by_year(self, data) {
 
 function merge_movies(self, movies, cur_year, cur_role, paragraph_list) {
     // merge movie snippets
-    let target_paragraph_ids = new Set()
-    // get paragraph ids
+    let sentence_set = new Set()
     movies.forEach(movie => {
         if(!movie.snippet || movie.snippet.length == 0) return
         movie.snippet.forEach(snippet => {
-            target_paragraph_ids.add(snippet.p)
+            sentence_set.add(snippet)
         })
     })
-    let snippets = []
-    if(target_paragraph_ids.size != 0) { 
-        // get paragraph texts
-        let target_paragraphs = paragraph_list.filter(p => target_paragraph_ids.has(Object.keys(p)[0]))
-        target_paragraphs = target_paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
-        const sentences = target_paragraphs.join(" ").match( /[^\.!\?]+[\.!\?]+/g ).map(sentence => sentence.trim())
-        snippets = filter_sentences(movies.map(movie => movie.title), sentences)
-    }
+    // let target_paragraph_ids = new Set()
+    // // get paragraph ids
+    // movies.forEach(movie => {
+    //     if(!movie.snippet || movie.snippet.length == 0) return
+    //     movie.snippet.forEach(snippet => {
+    //         target_paragraph_ids.add(snippet.p)
+    //     })
+    // })
+    // let snippets = []
+    // if(target_paragraph_ids.size != 0) { 
+    //     // get paragraph texts
+    //     let target_paragraphs = paragraph_list.filter(p => target_paragraph_ids.has(Object.keys(p)[0]))
+    //     const target_paragraph_contents = target_paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
+    //     const sentences = target_paragraph_contents.join(" ").match( /[^\.!\?]+[\.!\?]+/g ).map(sentence => sentence.trim())
+    //     snippets = filter_sentences(movies.map(movie => movie.title), sentences)
+    // }
     const offset = self.cfg.xScale.bandwidth() / (movies.length+1)
     movies.forEach((movie, i) => {
         movie.x =  self.getTrackOffset(movie) - self.cfg.xScale.bandwidth()/2 + (i+1) * offset
     })
     return {
         "type": "merged",
+        "stage": movies[0].stage,
         "title": movies.map(movie => movie.title).join(", "),
         "movies": movies,
         "year": cur_year,
-        "snippet": snippets.map(snippet => { 
-            return {
-                snippet: snippet
-            }
-        }),
+        "snippet": Array.from(sentence_set),
+        // "snippet": snippets.map(snippet => { 
+        //     return {
+        //         snippet: snippet
+        //     }
+        // }),
         "role": [cur_role],
     }
 }

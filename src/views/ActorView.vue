@@ -1,6 +1,6 @@
 <template>
     <div class="actor-view-container">
-        <Timeline :timeline_data="target_artist_career" :section_desciptions="stage_descriptions"></Timeline>
+        <Timeline :timeline_data="target_artist_career" :section_descriptions="stage_descriptions"></Timeline>
     </div>
 </template>
 
@@ -15,7 +15,6 @@ const target_artist: Ref<any> = ref(undefined)
 const target_artist_career: Ref<any> = ref(undefined)
 const stage_descriptions: Ref<any> = ref(undefined)
 vue.onMounted(() => {
-    get_artists()
     // target_artist.value = 'nm0000375'
     target_artist.value = 'nm0413168'
     // target_artist.value = 'nm0005351'
@@ -31,9 +30,11 @@ async function get_career(artist) {
             stage_descriptions.value = json.map(stage => {
                 return {
                     "header": stage.header,
-                    "description": stage.paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]]).join(" ")
+                    "descriptions": stage.paragraphs
+                    // "descriptions": stage.paragraphs.map(paragraph => paragraph[Object.keys(paragraph)[0]])
                 }
             })
+            console.log(stage_descriptions.value)
             console.log("career fetched", json)
         })
 }

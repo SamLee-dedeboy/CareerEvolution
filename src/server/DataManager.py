@@ -2,7 +2,7 @@ import json
 from collections import defaultdict
 from pprint import pprint
 import re
-
+from nltk import tokenize
 
 class DataManager():
     def __init__(self):
@@ -76,11 +76,14 @@ class DataManager():
         for header, stage in stages.items():
             stage['paragraphs'] = list(stage['paragraphs'])
             stage_index = stage['stage']
+            paragraph_list = self.getParagraphs(artist_id, header, stage['paragraphs']) 
             for movie in stage['movies']:
                 movie['stage'] = stage_index
+                movie['snippet'] = add_sentence_index(movie['snippet'], paragraph_list)
+
             stages_list[stage_index] = {
                 "header": header,
-                "paragraphs": self.getParagraphs(artist_id, header, stage['paragraphs']),
+                "paragraphs": paragraph_list, 
                 "movies": stage['movies']
             }
         return stages_list
@@ -92,8 +95,9 @@ class DataManager():
             if section['header'] == target_header:
                 for pid, snippet in section.items():
                     if pid in target_pids: 
-                        paragraphs.append({pid: clean_snippet(snippet)})
+                        paragraphs.append({pid: splitSentences(snippet, post_process=clean_snippet)})
         return paragraphs
+    
                  
 
 
@@ -121,6 +125,7 @@ def decideHeader(mentions, header_list):
         return header_list[len(header_list)-1]
     else:
         return max(header_snippets_count, key=header_snippets_count.get)
+
 def filter_snippets(header, snippets):
     res = [] 
     for section in snippets:
@@ -129,7 +134,20 @@ def filter_snippets(header, snippets):
                 res.append(sentence)
     return res
 
+def add_sentence_index(sentences, paragraph_list):
+    for sentence in sentences:
+        for paragraph in paragraph_list:
+            # paragraph_sentences = splitSentences(list(paragraph.values())[0], post_process=clean_snippet)
+            for (index, paragraph_sentence) in enumerate(list(paragraph.values())[0]):
+                if sentence['snippet'] == paragraph_sentence:
+                    sentence['index'] = index
+                    break
+    return sentences
+
+
 def clean_snippet(snippet):
     return re.sub("[\(\[].*?[\)\]]", "", snippet).strip()
 
+def splitSentences(content, post_process=lambda x:x):
+    return list(map(post_process, tokenize.sent_tokenize(content)))
 
