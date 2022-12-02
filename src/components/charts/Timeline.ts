@@ -11,7 +11,7 @@ export class TimelineConfig {
     width: number = 400  
 	height: number = 600
 	margin: Margin = {top: 50, right: 20, bottom: 20, left: 400}
-    interval: number = 80
+    interval: number = 120
     xScale: any;
     tracks: any;
 }
@@ -27,6 +27,7 @@ export class Timeline {
     timeline_margin_top: number;
     yInterval: any;
     iconScale: any;
+    tooltipContent: any;
 
     public constructor(svgSelector, options) {
         this.svgSelector = svgSelector 
@@ -38,7 +39,7 @@ export class Timeline {
         this.timeline_margin_top = 100
     }
 
-    init(data) {
+    init(data, tooltipContent) {
         this.data = data
         this.svg = d3.select(this.svgSelector)
         // setup configs
@@ -47,12 +48,14 @@ export class Timeline {
                 if('undefined' !== typeof this.options[i]){ (this.cfg as any)[i] = this.options[i]; }
 			}
 		}
+        d3.select(".tooltip").style("opacity", 0)
+        this.tooltipContent = tooltipContent
         // calculate height of the view from timeline length
         console.log(data)
         const timeline_length = data.reduce((total, step) => total + step.movies.length, 0)
         console.log("timeline length", timeline_length)
         const years = data.reduce((years, step)=> years.concat(step.movies.map(movie => +movie.year)), [])
-        this.contentHeight = (Math.max(...years) - Math.min(...years) + 2) * (this.cfg.interval + this.cfg.interval/2)
+        this.contentHeight = (Math.max(...years) - Math.min(...years) + 12) * (this.cfg.interval)
         console.log(this.cfg.width, this.cfg.margin.left, this.cfg.margin.right)
         this.svgWidth = this.cfg.width + this.cfg.margin.left + this.cfg.margin.right
         this.svgHeight = this.contentHeight + this.cfg.margin.top + this.cfg.margin.bottom
@@ -79,7 +82,7 @@ export class Timeline {
         const movie_impact = timeline_movies.map(movie => +movie.votes*(+movie.rating)) 
         this.iconScale = d3.scaleLinear()
             .domain([Math.min(...movie_impact), Math.max(...movie_impact)])
-            .range([20, 40])
+            .range([15, 40])
 
         this.svg
             .attr("width",  this.svgWidth)
@@ -222,34 +225,61 @@ export class Timeline {
                 const movie_data = node_data.movies || [node_data]
                 const year = d3.select(this).selectAll("g.node")
                     .data(movie_data)
+                const node = year.enter().append("g").attr("class", "node")
                     .style("cursor", "pointer")
+                    .on("mousemove", (e, d) => {
+                        let align_image_offset = 0
+                        // if(this.props.view?.type === ViewType.OutletScatter) align_image_offset = 50 - 15
+                        d3.select(".tooltip")
+                            .style("left", e.pageX + align_image_offset + 15 + "px")
+                            .style("top", e.pageY - 5 - align_image_offset + "px")
+                        self.tooltipContent.value = d
+
+                    })
                     .on("mouseover", function(this: any, e, d) {
                         this.classList.add("hovered")
                         d3.select(this).attr("fill", "white")
                         // TODO: animate hover effect in css
+                        d3.select(".tooltip").style("opacity", 1)
 
                     })
                     .on("mouseout", function(this: any, e, d) {
                         this.classList.remove("hovered")
                         d3.select(this).attr("fill", "black")
+                        d3.select(".tooltip").style("opacity", 0)
                     })
-                const node = year.enter().append("g").attr("class", "node")
                 node.each(function(movie_data: any) {
                     const genres = movie_data.genre.split(",")
                     const genre_length = genres.length
-                    const icon_size = self.iconScale(+movie_data.votes*(+movie_data.rating))
+                    const circle_size = self.iconScale(+movie_data.votes*(+movie_data.rating))  
+                    // const icon_size = self.iconScale(+movie_data.votes*(+movie_data.rating))
+                    const node_center_x = movie_data.x
+                    const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
+                    const calculate_icon_size = (genre_length, circle_size) => {
+                        if(genre_length == 1) return circle_size/2+1
+                        if(genre_length == 2) return circle_size
+                        // if(genre_length == 3) return circle_size/Math.sqrt(3) + circle_size/2
+                        if(genre_length == 3) return 2*Math.sqrt(3)/(2+Math.sqrt(3))*circle_size
+                        return circle_size
+                    }
+                    const icon_size = calculate_icon_size(genre_length, circle_size)
+                    d3.select(this).append("circle")
+                        .attr("class", "icon-stroke")
+                        .attr("cx", node_center_x)
+                        .attr("cy", node_center_y + (genre_length == 3? 4: 0))
+                        .attr("r", circle_size)
+                        .attr("stroke", "black")
+                        .attr("fill", "none")
                     d3.select(this).selectAll("image.genre-icon")
                         .data(genres)
                         .join("image")
                         .attr("x", (d, i) => {
-                            const node_center_x = movie_data.x
                             if(genre_length == 1) return node_center_x - icon_size/2
                             if(genre_length == 2) return node_center_x - icon_size + i*icon_size 
                             if(genre_length == 3) return node_center_x - icon_size + i*icon_size/2 
                             return node_center_x
                         })
                         .attr("y", (d, i) => {
-                            const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
                             if(genre_length == 1) return node_center_y - icon_size/2
                             if(genre_length == 2) return node_center_y - icon_size/2
                             if(genre_length == 3) return node_center_y - icon_size/2 + ((i%2) == 0? 1 : -1)*Math.sqrt(3)/4*icon_size
@@ -266,9 +296,10 @@ export class Timeline {
                     .join("text")
                     .attr("class", "titles")
                     .attr("x", -200)
-                    .attr("y", (d, i) => self.yInterval(+movie_data[0].year, start_year, stage_index) + i*20) 
+                    .attr("y", (d, i) => self.yInterval(+movie_data[0].year, start_year, stage_index) + i*30) 
                     .text((d:any) => d)
                     .style("pointer-events", "none")
+                    .attr("font-size", "0.8em")
                     .call(wrap, 200)
 
                 // years
@@ -277,6 +308,7 @@ export class Timeline {
                     .attr("x", -250)
                     .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
                     .text(movie_data[0].year + " - ")
+                    .attr("font-size", "0.8em")
                     .call(wrap, 100)
 
                 // snippets
@@ -285,6 +317,7 @@ export class Timeline {
                     .attr("class", "snippets")
                     .attr("x", self.getSnippetPosition(movie_data[0].role) + 30)
                     .attr("y", self.yInterval(+movie_data[0].year, start_year, stage_index))
+                    .attr("font-size", "1.2em")
                     .style("pointer-events", "none")
                     .text(snippets)
                     .call(wrap, self.getWrapWidth(movie_data[0].role))

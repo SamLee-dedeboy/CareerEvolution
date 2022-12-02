@@ -6,15 +6,34 @@
                 class="section"
                 :style="{top: section_offsets[section_index] + 'px'}"
                 >
-                <h4 class='section-header'> {{ section.header }} </h4>
-                <div v-for="paragraph in section.descriptions" class='section-description'> 
-                    <span v-for="(sentence, sentence_index) in paragraph[Object.keys(paragraph)[0]]" class="sentence" :id="`sentence_${Object.keys(paragraph)[0]}_${sentence_index}`">
-                        {{ sentence }} &#8202; 
-                    </span>
+                <h3 class='section-header'> {{ section.header }} </h3>
+                <div class="scrolled-paragraphs">
+                    <div v-for="paragraph in section.descriptions" class='section-description'> 
+                        <span v-for="(sentence, sentence_index) in paragraph[Object.keys(paragraph)[0]]" class="sentence" :id="`sentence_${Object.keys(paragraph)[0]}_${sentence_index}`">
+                            {{ sentence }} &#8202; 
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
         <svg :class="svgClass"></svg>
+        <div class="tooltip" v-if='tooltip_content'>
+            Title:
+            <span class='tooltip-title'>  {{ tooltip_content.title }} </span>
+            <br>
+            Year:
+            <span class='tooltip-year'>  {{ tooltip_content.year }} </span>
+            <br>
+            Genres: 
+            <!-- <span class='tooltip-genre' v-for="genre in tooltip_content.genre.split(',')"> {{ genre }} </span> -->
+            <span class='tooltip-genre'> {{ tooltip_content.genre }} </span>
+            <br>
+            IMDb Votes:
+            <span class='tooltip-votes'> {{ tooltip_content.votes }} </span>
+            <br>
+            IMDb Rating:
+            <span class='tooltip-rating'> {{ tooltip_content.rating }} </span>
+        </div>
         <!-- <img src=action.svg class=action> -->
     </div>
 </template>
@@ -33,22 +52,22 @@ const svgClass = "timeline-svg"
 const svgSelector = vue.computed(() => `.${svgClass}`)
 const section_offsets: Ref<number[]> = ref([])
 const timeline = new Timeline(svgSelector.value, {
-    width: Math.min(900, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
+    width: Math.min(700, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
     tracks: {
-        "actor": "#872B3D",
-        "producer": "#D7D160",
-        "director": "#56D3CD",
-        "writer": "#FC6940",
+        "actor": "#F0F0C9",
+        "producer": "#72DDF7",
+        "director": "#E7C8DD",
+        "writer": "#FA824C",
     },
 })
 
 vue.watch(() => props.section_descriptions, () => {
     console.log(props.section_descriptions)
 })
-
+const tooltip_content: Ref<any> = ref(undefined)
 vue.watch(() => props.timeline_data, () => {
     if(props.timeline_data !== undefined) {
-        timeline.init(props.timeline_data)
+        timeline.init(props.timeline_data, tooltip_content)
         section_offsets.value = timeline.getSectionOffset()
         setupScroller()
 
@@ -68,8 +87,12 @@ function setupScroller() {
     // setup event handling
     scroll.on('active', function (index) {
         // highlight vis
-        d3.selectAll('.step')
-        .style('opacity', function (d, i) { return i === index ? 1 : 0.05; });
+        d3.selectAll('.step').each(function (d, i) {
+            d3.select(this).selectAll("text").style("opacity", i === index? 1 : 0.05)
+        })
+
+        // }).selectAll("text")
+        // .style('opacity', function (d, i) { return i === index ? 1 : 0.05; });
 
         // highlight section description
         const active_step = d3.selectAll(".step").filter((d, i) => i === index)
@@ -77,6 +100,7 @@ function setupScroller() {
         const active_sentence_infos = active_step.data()[0].snippet.map(snippet => { return {"p": snippet.p, "index": snippet.index} })
         console.log(active_step.data()[0], active_step.data()[0].stage, active_sentence_infos)
         d3.selectAll("span.sentence").style("background", "unset")
+        // d3.selectAll("image").style("opacity", 1)
         active_sentence_infos.forEach(sentence_info => {
             active_stage.select(`span#sentence_${sentence_info.p}_${sentence_info.index}`).style("background", "yellow")
         })
@@ -103,8 +127,12 @@ function setupScroller() {
     width: inherit;
     opacity: 0;
     transition: visibility 0s, opacity 0.5s linear;
+    height: inherit;
+}
+
+.scrolled-paragraphs {
     overflow-y: auto;
-    height: 800px;
+    height: 600px;
 }
 
 :deep(.active) {
@@ -136,6 +164,15 @@ function setupScroller() {
 .section-description {
   text-align: left;
   margin-top: 20px;
+}
+.tooltip {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    text-align: left;
+    background: white;
+    border: solid 3px black;
+    padding: 5px;
 }
 
 </style>
