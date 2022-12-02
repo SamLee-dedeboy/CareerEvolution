@@ -9,15 +9,18 @@
     </div>
 </template>
 
+
 <script>
 import * as d3 from "d3";
 import LineChart from '../components/line_chart.vue';
 import Dropdown from '../components/dropdown_subset.vue';
 import HP from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
-import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
-import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
-import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
-import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
+// import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
+// import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
+// import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
+// import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
+import { useRoute } from 'vue-router'
+
 
 export default {
     data(){
@@ -61,6 +64,7 @@ export default {
         },
         handleSelectActor(selected) {
             console.log('parent noticed change actor ' + selected.id + selected.name);
+            this.$router.push({ name: 'actorview', params: { id: selected.id } })
         }
     }
 }

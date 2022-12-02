@@ -8,15 +8,18 @@
 import Timeline from '../components/Timeline.vue';
 import * as vue from "vue"
 import { Ref, ref } from "vue"
+import { useRoute } from "vue-router"
 
+const route = useRoute()
 const server_address = vue.inject("server_address")
 const artists: Ref<any[]> = ref([])
 const target_artist: Ref<any> = ref(undefined)
 const target_artist_career: Ref<any> = ref(undefined)
 const stage_descriptions: Ref<any> = ref(undefined)
 vue.onMounted(() => {
+    target_artist.value = route.params.id
     // target_artist.value = 'nm0000375'
-    target_artist.value = 'nm0413168'
+    // target_artist.value = 'nm0413168'
     // target_artist.value = 'nm0005351'
     // target_artist.value = 'nm0426059'
     get_career(target_artist.value)
