@@ -1,6 +1,21 @@
 <template>
     <div class="timeline-container">
+        <div class="description-container">
+            <div v-for="(section, section_index) in section_descriptions" 
+                :id="'section_'+section_index" 
+                class="section"
+                :style="{top: section_offsets[section_index] + 'px'}"
+                >
+                <h4 class='section-header'> {{ section.header }} </h4>
+                <div v-for="paragraph in section.descriptions" class='section-description'> 
+                    <span v-for="(sentence, sentence_index) in paragraph[Object.keys(paragraph)[0]]" class="sentence" :id="`sentence_${Object.keys(paragraph)[0]}_${sentence_index}`">
+                        {{ sentence }} &#8202; 
+                    </span>
+                </div>
+            </div>
+        </div>
         <svg :class="svgClass"></svg>
+        <!-- <img src=action.svg class=action> -->
     </div>
 </template>
 <script setup lang="ts">
@@ -12,23 +27,34 @@ import scroller from "./scroller"
 
 const props = defineProps({
     timeline_data: Object as () => any,
+    section_descriptions: Object as () => any[],
 })
 const svgClass = "timeline-svg"
 const svgSelector = vue.computed(() => `.${svgClass}`)
+const section_offsets: Ref<number[]> = ref([])
 const timeline = new Timeline(svgSelector.value, {
-    width: Math.min(1100, window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth),
+    width: Math.min(900, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
     tracks: {
         "actor": "#872B3D",
+        "producer": "#D7D160",
         "director": "#56D3CD",
         "writer": "#FC6940",
-        "producer": "#D7D160",
     },
 })
 
-vue.onMounted(() => {
-    timeline.init(props.timeline_data)
-    setupScroller()
+vue.watch(() => props.section_descriptions, () => {
+    console.log(props.section_descriptions)
 })
+
+vue.watch(() => props.timeline_data, () => {
+    if(props.timeline_data !== undefined) {
+        timeline.init(props.timeline_data)
+        section_offsets.value = timeline.getSectionOffset()
+        setupScroller()
+
+    }
+})
+
 
 
 function setupScroller() {
@@ -41,9 +67,19 @@ function setupScroller() {
 
     // setup event handling
     scroll.on('active', function (index) {
-        // highlight current step text
+        // highlight vis
         d3.selectAll('.step')
-        .style('opacity', function (d, i) { return i === index ? 1 : 0.1; });
+        .style('opacity', function (d, i) { return i === index ? 1 : 0.05; });
+
+        // highlight section description
+        const active_step = d3.selectAll(".step").filter((d, i) => i === index)
+        const active_stage = d3.select(`#section_${active_step.data()[0].stage}`)
+        const active_sentence_infos = active_step.data()[0].snippet.map(snippet => { return {"p": snippet.p, "index": snippet.index} })
+        console.log(active_step.data()[0], active_step.data()[0].stage, active_sentence_infos)
+        d3.selectAll("span.sentence").style("background", "unset")
+        active_sentence_infos.forEach(sentence_info => {
+            active_stage.select(`span#sentence_${sentence_info.p}_${sentence_info.index}`).style("background", "yellow")
+        })
 
         // activate current section
         timeline.activate(index);
@@ -56,3 +92,50 @@ function setupScroller() {
 }
 
 </script>
+
+<style scoped>
+.timeline-container {
+    display: flex;
+}
+.section {
+    visibility: hidden;
+    position: absolute;
+    width: inherit;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.5s linear;
+    overflow-y: auto;
+    height: 800px;
+}
+
+:deep(.active) {
+    position: fixed;
+    top: 15% !important;
+    visibility: visible;
+    opacity: 1;
+}
+.description-container {
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+  margin-left: 2%;
+}
+
+.action {
+    filter: invert(21%) sepia(19%) saturate(4450%) hue-rotate(315deg) brightness(93%) contrast(91%);
+    /* background-color: red;
+    mask: url(action.svg) no-repeat center / contain;
+    -webkit-mask: url(action.svg) no-repeat center / contain; */
+    position:absolute;
+    left: 1%;
+    top: 1%;
+    width: 50px;
+    height: 50px;
+}
+.section-description {
+  text-align: left;
+  margin-top: 20px;
+}
+
+</style>

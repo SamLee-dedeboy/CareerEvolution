@@ -7,9 +7,12 @@ import requests
 from bs4 import BeautifulSoup
 import sys
 import datetime
+import os
 from os import listdir
 from os.path import isfile, join
 import glob
+from nltk import tokenize
+import re
 import pandas
 import numpy as np
 # csv.f_size_limit(sys.maxsize)
@@ -35,19 +38,23 @@ def main():
         # print(len(movie_ids))
         # movie_ids = ['tt0800080']
         # scrape_imdb_film_credits(resume)
+
         # movie_credits = []
-        # for credit_file in glob.glob(r'film_credits/*.json'):
+        # for credit_file in glob.glob(r'film_credits_w_ids/*.json'):
         #     credits = json.load(open(credit_file))
         #     movie_credits.append(credits)
+        # add_simple_table_ids()
 
         # movie_subset_file = open(r'movie_subsets.txt')
         # subset_movie_ids = list(map(lambda id: id.strip(), movie_subset_file.readlines()))
         # actor_list = extract_actor_list_from_movie_subset(subset_movie_ids)
-        save_movie_subset()
-        # print(actor_list)
-        # extract_actor_name("tttes")
-        # I'm working on this now
         # actor_careers = extract_actor_career(actor_list, movie_credits)
+        # actor_info_list = json.load(open(r'target_actor_info.json'))
+        # scrape_career(actor_list=actor_info_list)
+        # generate_movie_pool()
+        # add_snippets()
+        genre_dict = json.load(open(r'genre_dict.json'))
+        print(genre_dict.keys())
         
 
 def extract_actor_name(name_ids):
@@ -744,6 +751,8 @@ def filter_movie(movie_id_dict, english_movie_ids):
         if genre_check: continue
         genre_set.update(genres)
         kept.append(movie)
+    print(genre_set)
+    return
     i = 0
     for kept_movie in kept:
         i += 1
@@ -757,14 +766,43 @@ def filter_movie(movie_id_dict, english_movie_ids):
 
 def extract_actor_career(actor_list, movie_credits):
     actor_career_dict = {}
+    progress = 0
     for movie in movie_credits:
-        cast_ids = list(map(lambda cast: cast['id'], movie['casts']))
-        director_ids = list(map(lambda cast: cast['id'], movie['directors']))
-        writer_ids = list(map(lambda cast: cast['id'], movie['writers']))
-        producer_ids = list(map(lambda cast: cast['id'], movie['producers']))
+        print(movie['id'])
+        if movie['casts']:
+            movie['casts'] = filter(lambda cast: 'id' in cast, movie['casts'])
+            cast_ids = list(map(lambda cast: cast['id'], movie['casts']))
+            check_credit(actor_list, cast_ids, "actor", actor_career_dict, movie['id'])
+        if movie['directors']:
+            movie['directors'] = filter(lambda director: 'id' in director, movie['directors'])
+            director_ids = list(map(lambda director: director['id'], movie['directors']))
+            check_credit(actor_list, director_ids, "director", actor_career_dict, movie['id'])
+        if movie['writers']:
+            movie['writers'] = filter(lambda writer: 'id' in writer, movie['writers'])
+            writer_ids = list(map(lambda writer: writer['id'], movie['writers']))
+            check_credit(actor_list, writer_ids, "writer", actor_career_dict, movie['id'])
+        if movie['producers']:
+            movie['producers'] = filter(lambda producer: 'id' in producer, movie['producers'])
+            producer_ids = list(map(lambda producer: producer['id'], movie['producers']))
+            check_credit(actor_list, producer_ids, "producer", actor_career_dict, movie['id'])
+        progress += 1
+        print("{}/{}".format(progress, len(movie_credits)))
+    for actor_id, career in actor_career_dict.items():
+        career['id'] = actor_id
+        save_json(career, "careers/" + actor_id + ".json")
 
+def check_credit(actor_list, checked_list, idf, actor_career_dict, movie_id):
+    for actor_id in checked_list:
+        if actor_id in actor_list:
+            if actor_id not in actor_career_dict.keys():
+                actor_career_dict[actor_id] = {
+                    "actor": [],
+                    "director": [],
+                    "writer": [],
+                    "producer": [],
+                }
+            actor_career_dict[actor_id][idf].append(movie_id)
 
-    return
 
     
 
@@ -832,6 +870,237 @@ def scrape_actor_works(actor_id_list):
                     film_id = row['id'].split('-')[1]
                     print(header_name, film_id)
                 return
+
+def add_simple_table_ids():
+    # names = tsv_to_dicts(r'name.tsv') 
+    # print("constructing dict...")
+    # print("construct dict done")
+    target_actors = json.load(open(r'target_actor_info.json'))
+    name_id_dict = {actor['name']: actor['id'] for actor in target_actors}
+    movie_credits = []
+    for credit_file in glob.glob(r'film_credits/*.json'):
+        credits = json.load(open(credit_file))
+        movie_credits.append(credits)
+    
+    for movie in movie_credits:
+        if movie['directors']:
+            for director in movie['directors']:
+                if director['name'] in name_id_dict:
+                    id = name_id_dict[director['name']]
+                    director['id'] = id
+        if movie['writers']:
+            for writer in movie['writers']:
+                if writer['name'] in name_id_dict:
+                    id = name_id_dict[writer['name']]
+                    writer['id'] = id
+        if movie['producers']:
+            for producer in movie['producers']:
+                if producer['name'] in name_id_dict:
+                    id = name_id_dict[producer['name']]
+                    producer['id'] = id
+
+        save_json(movie, 'film_credits_w_ids/' + movie['id'] + ".json")
+
+def scrape_career(actor_list):
+    import requests
+    from bs4 import BeautifulSoup
+    wiki_prefix = "https://en.wikipedia.org/wiki/"
+
+    # artist_career_dict = {}
+    discarded_artist = []
+    count = 0
+    for actor in actor_list:
+        count += 1
+        print("{}/{}".format(count, len(actor_list)))
+        id = actor['id']
+        name = actor['name']
+        wiki_id = name.replace(" ", "_")
+        url = wiki_prefix + wiki_id 
+        response = requests.get(url)
+        career_sections = []
+        try:
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                headers = soup.find_all("span", attrs={"class": "mw-headline"})
+                career_header = None
+                for header in headers:
+                    if "career" in header.text.lower():
+                        career_header = header
+                if career_header is None:
+                    discarded_artist.append(
+                        {
+                            "id": id,
+                            "name": name,
+                            "reason": "No career section",
+                        }
+                    )
+                    print("no career section", name)
+                    continue
+                next_sibling = career_header.parent.next_sibling.next_element
+                while(True):
+                    if next_sibling == "\n":
+                        next_sibling = next_sibling.next_element
+                    if next_sibling.name == "h3":
+                        new_section = {}
+                        section_header = next_sibling
+                        header_content = section_header.find_all("span", attrs={"class": "mw-headline"})[0]
+                        new_section = { "header": header_content.text}
+                        career_sections.append(new_section)
+                        p_count = 0
+                        next_sibling = next_sibling.next_sibling
+                    elif next_sibling.name == "p":
+                        content = ''.join(next_sibling.strings)
+                        if len(career_sections) == 0:
+                            career_sections.append({"header": "empty"})
+                        career_sections[len(career_sections)-1]['p' + str(p_count)] = content
+                        p_count += 1
+                        next_sibling = next_sibling.next_sibling
+                    elif next_sibling.name == "h2":
+                        break
+                    else:
+                        next_sibling = next_sibling.next_sibling
+                # artist_career_dict[id]["career"] = career_sections
+            else:
+                discarded_artist.append(
+                    {
+                        "id": id,
+                        "name": name,
+                        "reason": "No wiki page"
+                    }
+                )
+                print("no wiki page:", name)
+                continue
+        except: 
+            discarded_artist.append(
+                {
+                    "id": id,
+                    "name": name,
+                    "reason": "Unknown Exception"
+                }
+            )
+            print("exception:", name)
+            continue
+        career = {
+            "id": id,
+            "name": name,
+            "career": career_sections
+        }
+        save_json(career, "career_snippets/" + id + ".json")
+    save_json(discarded_artist, "discarded_artist.json")
+
+def extract_target_actor_info():
+    actor_list = json.load(open(r'target_actor_list.json'))
+    print("constructing dict...")
+    actor_names = tsv_to_dicts(r'name.tsv') 
+    actor_nid_dict = {x['nconst']: x for x in actor_names}
+    print("construct dict done")
+    target_actor_id_name_list = []
+    for actor_id in actor_list:
+        if actor_id not in actor_nid_dict: continue
+        actor_info = actor_nid_dict[actor_id]
+        actor_id_name = {
+            "id": actor_id,
+            "name": actor_info['primaryName'],
+            "birthYear": actor_info['birthYear'],
+            "deathYear": actor_info['deathYear'],
+            "primaryProfession": actor_info['primaryProfession'],
+            "knownForTitles": actor_info['knownForTitles']
+        }
+        target_actor_id_name_list.append(actor_id_name)
+    save_json(target_actor_id_name_list, r'target_actor_id_name_list.json')
+    return
+
+def generate_movie_pool():
+    movie_pool = set()
+    for actor_career_file in glob.glob(r'careers/*.json'):
+        career = json.load(open(actor_career_file))
+        asActor = career['actor']
+        asDirector = career['director']
+        asWriter = career['writer']
+        asProducer = career['producer']
+        movie_pool.update(asActor)
+        movie_pool.update(asDirector)
+        movie_pool.update(asWriter)
+        movie_pool.update(asProducer)
+    movie_pool = list(movie_pool)
+    movie_basics = tsv_to_dicts(r'title_basics.tsv')
+    movie_basics_dict = {x['tconst']: x for x in movie_basics}
+    movie_ratings = tsv_to_dicts(r'title_ratings.tsv')
+    movie_ratings_dict = {x['tconst']: x for x in movie_ratings}
+
+    movie_info_dict = {}
+    for movie_id in movie_pool:
+        if movie_id not in movie_basics_dict or movie_id not in movie_ratings_dict: continue
+        movie_basics = movie_basics_dict[movie_id]
+        movie_ratings = movie_ratings_dict[movie_id]
+        movie_info_dict[movie_id] = {
+            "id": movie_id,
+            "title": movie_basics['primaryTitle'],
+            "votes": movie_ratings['numVotes'],
+            "ratings": movie_ratings['averageRating'],
+            "genre": movie_basics['genres'],
+            "year": movie_basics['startYear'],
+        }
+    save_json(movie_info_dict, r'movie_pool.json')
+
+def add_snippets():
+    movie_pool = json.load(open(r'movie_pool.json'))
+    res = {}
+    for actor_career_file in glob.glob(r'careers/*.json'):
+        actor_id = os.path.basename(actor_career_file).split(".")[0]
+        try:
+            snippets = json.load(open("career_snippets/" + actor_id + ".json"))
+        except:
+            continue
+        career = json.load(open(actor_career_file))
+        asActor = career['actor']
+        asDirector = career['director']
+        asWriter = career['writer']
+        asProducer = career['producer']
+        actor_career_dict = defaultdict(list)
+        merge_movie_roles(actor_career_dict, asActor, "actor")
+        merge_movie_roles(actor_career_dict, asDirector, "director")
+        merge_movie_roles(actor_career_dict, asWriter, "writer")
+        merge_movie_roles(actor_career_dict, asProducer, "producer")
+
+        res[actor_id] = generate_movie_info_w_snippet(snippets, actor_career_dict, movie_pool)
+    save_json(res, r'career_w_snippets.json')
+
+def merge_movie_roles(actor_career_dict, movie_ids, idf):
+    for movie_id in movie_ids:
+        actor_career_dict[movie_id].append(idf)
+
+
+def generate_movie_info_w_snippet(actor_snippets, actor_career_dict, movie_pool_dict):
+    actor_id = actor_snippets['id']
+    actor_name = actor_snippets['name']
+    movie_infos = []
+    movie_ids = list(actor_career_dict.keys())
+    for movie_id in movie_ids:
+        if movie_id not in movie_pool_dict: continue
+        movie_info = {
+            "tid": movie_id,
+            "role": actor_career_dict[movie_id],
+            "wiki_description": [],
+        }
+        movie_title = movie_pool_dict[movie_id]['title']
+        for section in actor_snippets['career']:
+            header = section['header']
+            snippets = []
+            for p, content in section.items():
+                if p == "header": continue
+                for sentence in splitSentences(content, post_process=lambda sentence: re.sub("[\(\[].*?[\)\]]", "", sentence).strip()):
+                    if movie_title.lower() in sentence.lower(): # alternative: only store sentences, not entire paragraph
+                        snippets.append({"header": header, "p": p, "snippet": sentence}) 
+            if len(snippets) != 0:
+                # movie_info['wiki_description'].append({"header": header, "sentences": snippets})
+                movie_info['wiki_description'].append(snippets)
+        movie_infos.append(movie_info)
+    return movie_infos
+
+def splitSentences(content, post_process=lambda x:x):
+    return list(map(post_process, tokenize.sent_tokenize(content)))
+
 
 main()
 

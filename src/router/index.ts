@@ -10,11 +10,11 @@ const router = createRouter({
       name: "overview",
       component: Overview,
     },
-    // {
-    //   path: "/",
-    //   name: "actorview",
-    //   component: ActorView,
-    // },
+    {
+      path: "/:id",
+      name: "actorview",
+      component: ActorView,
+    },
   ],
 });
 
