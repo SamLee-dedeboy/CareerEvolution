@@ -18,13 +18,8 @@
                 Let's dive in:
             </div>
         </div>
-        <div id="info_section">
-            <!-- <div id="legend">
-                <Legend v-if="!dataExists"></Legend>
-            </div> -->
-            <div id="dropdown_view">
-                <Dropdown @selectedChange="handleChange_dropdown"/>
-            </div>
+        <div id="dropdown_view">
+            <Dropdown @selectedChange="handleChange_dropdown"/>
         </div>
         <div id="lines_view">
             <LineChart v-if="dataExists" :myData="mySubset" :mySubsetName="mySelection.text" @selectedChange="handleSelectActor"></LineChart>
@@ -98,15 +93,6 @@ export default {
         position: relative;
         justify-content: center;
     }
-    #info_section {
-        display: flex;
-        height: 5%;
-        width: 30%;
-        margin-top: 10px;
-        margin-bottom: 10px;
-        margin-left: auto;
-        margin-right: auto;
-    }
     #dropdown_text_title {
         font-weight: bold;
         font-size: 20px;
@@ -114,10 +100,6 @@ export default {
     #dropdown_text {
         font-size: 12px;
     }
-    /* #legend {
-        position: relative;
-        width: 5%;
-    } */
     #dropdown_view {
         position: relative;
         width: 85%;
