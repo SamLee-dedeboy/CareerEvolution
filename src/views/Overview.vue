@@ -18,13 +18,16 @@
                 Let's dive in:
             </div>
         </div>
-        <div id="info_section">
-            <!-- <div id="legend">
+        <!-- <div id="info_section">
+            <div id="legend">
                 <Legend v-if="!dataExists"></Legend>
-            </div> -->
+            </div>
             <div id="dropdown_view">
                 <Dropdown @selectedChange="handleChange_dropdown"/>
             </div>
+        </div> -->
+        <div id="dropdown_view">
+            <Dropdown @selectedChange="handleChange_dropdown"/>
         </div>
         <div id="lines_view">
             <LineChart v-if="dataExists" :myData="mySubset" :mySubsetName="mySelection.text" @selectedChange="handleSelectActor"></LineChart>
@@ -39,10 +42,10 @@ import LineChart from '../components/line_chart.vue';
 import Dropdown from '../components/dropdown_subset.vue';
 import Legend from '../components/legend_text.vue';
 import HP from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
-// import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
-// import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
-// import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
-// import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
+import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
+import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
+import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
+import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
 import { useRoute } from 'vue-router'
 
 
@@ -102,7 +105,7 @@ export default {
         position: relative;
         justify-content: center;
     }
-    #info_section {
+    /* #info_section {
         display: flex;
         height: 5%;
         width: 30%;
@@ -110,12 +113,14 @@ export default {
         margin-bottom: 10px;
         margin-left: auto;
         margin-right: auto;
-    }
+    } */
     #dropdown_text_title {
+        position: relative;
         font-weight: bold;
         font-size: 20px;
     }
     #dropdown_text {
+        position: relative;
         font-size: 12px;
     }
     /* #legend {
@@ -124,7 +129,7 @@ export default {
     } */
     #dropdown_view {
         position: relative;
-        width: 85%;
+        width: 100%;
     }
     #lines_view {
         height: 90%;
