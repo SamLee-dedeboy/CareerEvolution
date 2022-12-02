@@ -1,7 +1,30 @@
 <template>
     <div id="overview-container">
-        <div id="dropdown_view">
-            <Dropdown @selectedChange="handleChange_dropdown"/>
+        <div id="dropdown_text_title">
+            <div v-if="!dataExists">
+                This is the popularities of entertainment industry individuals in different movie series. 
+            </div>
+        </div>
+        <div id="dropdown_text">
+            <div v-if="!dataExists">
+                <br/>
+                What are the characteristics of different movie series? <br/>
+                <!-- What does it take to be part of a certain series? <br/> -->
+                How does participating in these movies help (or otherwise) these film industry workers? <br/>
+                How active an individual is in his/her career life? <br/>
+                <!-- Do individuals in a certain movie series tend to be part of the production team as well? <br/> -->
+                How confident are individuals in the movies they participated in? <br/>
+                <br/>
+                Let's dive in:
+            </div>
+        </div>
+        <div id="info_section">
+            <!-- <div id="legend">
+                <Legend v-if="!dataExists"></Legend>
+            </div> -->
+            <div id="dropdown_view">
+                <Dropdown @selectedChange="handleChange_dropdown"/>
+            </div>
         </div>
         <div id="lines_view">
             <LineChart v-if="dataExists" :myData="mySubset" :mySubsetName="mySelection.text" @selectedChange="handleSelectActor"></LineChart>
@@ -13,6 +36,7 @@
 import * as d3 from "d3";
 import LineChart from '../components/line_chart.vue';
 import Dropdown from '../components/dropdown_subset.vue';
+import Legend from '../components/legend_text.vue';
 import HP from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
 import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
 import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
@@ -30,6 +54,7 @@ export default {
     components: {
         Dropdown,
         LineChart,
+        Legend
     },
     created(){
         /* Fetch via CSV */
@@ -73,14 +98,29 @@ export default {
         position: relative;
         justify-content: center;
     }
-    #dropdown_view {
+    #info_section {
+        display: flex;
         height: 5%;
-        width: 80%;
-        position: relative;
+        width: 30%;
         margin-top: 10px;
         margin-bottom: 10px;
         margin-left: auto;
         margin-right: auto;
+    }
+    #dropdown_text_title {
+        font-weight: bold;
+        font-size: 20px;
+    }
+    #dropdown_text {
+        font-size: 12px;
+    }
+    /* #legend {
+        position: relative;
+        width: 5%;
+    } */
+    #dropdown_view {
+        position: relative;
+        width: 85%;
     }
     #lines_view {
         height: 90%;

@@ -59,13 +59,13 @@ def extract_actor_name(name_ids):
 def save_movie_subset():
     HP = {}
     HP_tmp = {}
-    # HP
-    movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
-    year_start = 2001
-    year_end = 2011
-    count_min = len(movie_ids) - 2
-    avg_rank = 40
-    save_name = 'HP_{}.json'.format(avg_rank)
+    # # HP
+    # movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    # year_start = 2001
+    # year_end = 2011
+    # count_min = len(movie_ids) - 2
+    # avg_rank = 40
+    # save_name = 'HP_{}.json'.format(avg_rank)
     # # Marvel 
     # movie_ids = ["tt0371746", "tt1228705", "tt1300854", "tt0800080", "tt0800369", "tt1981115", "tt3501632", "tt10648342", 
     #              "tt0458339", "tt1843866", "tt3498820", "tt0848228", "tt2395427", "tt4154756", "tt4154796", "tt2015381", 
@@ -95,44 +95,13 @@ def save_movie_subset():
     # count_min = len(movie_ids) / 2
     # avg_rank = 40
     # save_name = 'Xmen_{}.json'.format(avg_rank)
-    # # LoR
-    # movie_ids = ["tt0120737", "tt0167261", "tt0167260", "tt0903624", "tt1170358", "tt2310332"]
-    # year_start = 2001
-    # year_end = 2014
-    # count_min = len(movie_ids) - 2
-    # avg_rank = 40
-    # save_name = 'LoR_{}.json'.format(avg_rank)
-
-
-    for movie_id in movie_ids:
-        try:
-            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
-            casts = credits['casts']
-            if (not casts): continue
-            # get overall highest rank.
-            for cast in casts:
-                try:
-                    # if cast['rank'] > 5:  break
-                    if cast['id'] in HP_tmp.keys(): 
-                        HP_tmp[cast['id']]['rank_accu'] += cast['rank']
-                        HP_tmp[cast['id']]['count'] += 1
-                    else:
-                        # cast_id = cast['id']
-                        HP_tmp[cast['id']] = {}
-                        HP_tmp[cast['id']]['id'] = cast['id']
-                        HP_tmp[cast['id']]['name'] = cast['name']
-                        HP_tmp[cast['id']]['rank_accu'] = cast['rank']
-                        HP_tmp[cast['id']]['count'] = 1
-                    # print(cast['rank'], cast['name'])
-                except Exception as e:
-                    print(e)
-                    continue
-            # print(HP_tmp)
-
-        except Exception as e:
-            print(e)
-            continue
-    # print(HP_tmp)
+    # LoR
+    movie_ids = ["tt0120737", "tt0167261", "tt0167260", "tt0903624", "tt1170358", "tt2310332"]
+    year_start = 2001
+    year_end = 2014
+    count_min = len(movie_ids) - 2
+    avg_rank = 40
+    save_name = 'LoR_{}.json'.format(avg_rank)
 
     non_actors = json.load(open('target_actor_info.json'))
     dict_non_actors = {}
@@ -146,22 +115,130 @@ def save_movie_subset():
             directors = credits['directors']
             writers = credits['writers']
             producers = credits['producers']
+            if (not casts): continue
+            # get overall highest rank.
+            for cast in casts:
+                try:
+                    # if cast['rank'] > 5:  break
+                    if cast['id'] in HP_tmp.keys(): 
+                        HP_tmp[cast['id']]['rank_accu'] += cast['rank']
+                        HP_tmp[cast['id']]['count'] += 1
+                        HP_tmp[cast['id']]['roles_count'] += [1, 0, 0, 0]
+                        if 'actor' not in HP_tmp[cast['id']]['roles']:
+                            HP_tmp[cast['id']]['roles'].append('actor')
+                    else:
+                        # cast_id = cast['id']
+                        HP_tmp[cast['id']] = {}
+                        HP_tmp[cast['id']]['id'] = cast['id']
+                        HP_tmp[cast['id']]['name'] = cast['name']
+                        HP_tmp[cast['id']]['rank_accu'] = cast['rank']
+                        HP_tmp[cast['id']]['count'] = 1
+                        HP_tmp[cast['id']]['roles_count'] = [1, 0, 0, 0]
+                        HP_tmp[cast['id']]['roles'] = ['actor']
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            
+            for cast in directors:
+                try:
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    if cast_id in HP_tmp.keys():
+                        HP_tmp[cast_id]['roles_count'] += [0, 1, 0, 0]
+                        if 'director' not in HP_tmp[cast_id]['roles']:
+                            HP_tmp[cast_id]['roles'].append('director')
+                    else:
+                        HP_tmp[cast_id] = {}
+                        HP_tmp[cast_id]['id'] = cast_id
+                        HP_tmp[cast_id]['name'] = cast['name']
+                        HP_tmp[cast_id]['roles_count'] = [0, 1, 0, 0]
+                        HP_tmp[cast_id]['roles'] = ['director']
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            
+            for cast in writers:
+                try:
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    if cast_id in HP_tmp.keys():
+                        HP_tmp[cast_id]['roles_count'] += [0, 0, 1, 0]
+                        if 'writer' not in HP_tmp[cast_id]['roles']:
+                            HP_tmp[cast_id]['roles'].append('writer')
+                    else:
+                        HP_tmp[cast_id] = {}
+                        HP_tmp[cast_id]['id'] = cast_id
+                        HP_tmp[cast_id]['name'] = cast['name']
+                        HP_tmp[cast_id]['roles_count'] = [0, 0, 1, 0]
+                        HP_tmp[cast_id]['roles'] = ['writer']
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            
+            for cast in producers:
+                try:
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    if cast_id in HP_tmp.keys():
+                        HP_tmp[cast_id]['roles_count'] += [0, 0, 0, 1]
+                        if 'producer' not in HP_tmp[cast_id]['roles']:
+                            HP_tmp[cast_id]['roles'].append('producer')
+                    else:
+                        HP_tmp[cast_id] = {}
+                        HP_tmp[cast_id]['id'] = cast_id
+                        HP_tmp[cast_id]['name'] = cast['name']
+                        HP_tmp[cast_id]['roles_count'] = [0, 0, 0, 1]
+                        HP_tmp[cast_id]['roles'] = ['producer']
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            # print(HP_tmp)
+
+        except Exception as e:
+            print(e)
+            continue
+    # print(HP_tmp)
+
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            directors = credits['directors']
+            writers = credits['writers']
+            producers = credits['producers']
             if (not casts) and (not directors) and (not writers) and (not producers): continue
 
             for cast_key in HP_tmp:
                 try:
                     cast = HP_tmp[cast_key]
-                    if cast['count'] < count_min:  continue
-                    if cast['rank_accu']/cast['count'] > avg_rank:  continue
-                    if cast['id'] in HP.keys(): 
-                        if "actor" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("actor")
-                        continue
+                    if 'rank_accu' in cast.keys() and len(cast['roles'])==1:
+                        if cast['count'] < count_min:  continue
+                        if cast['rank_accu']/cast['count'] > avg_rank:  continue
+                        # if cast['id'] in HP.keys(): 
+                        #     if "actor" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("actor")
+                        #     continue
+
                     cast_id = cast['id']
                     HP[cast_id] = {}
                     HP[cast_id]['id'] = cast_id
                     HP[cast_id]['name'] = cast['name']
-                    HP[cast_id]['role'] = "actor"
-                    HP[cast_id]['roles'] = ["actor"]
+                    # HP[cast_id]['role'] = "actor"
+                    HP[cast_id]['roles'] = cast['roles']
+
+                    most_roles = np.argmax(np.array(cast["roles_count"]))
+                    if most_roles == 0:
+                        HP[cast_id]['role'] = "actor"
+                    elif most_roles == 1:
+                        HP[cast_id]['role'] = "director"
+                    elif most_roles == 2:
+                        HP[cast_id]['role'] = "writer"
+                    elif most_roles == 3:
+                        HP[cast_id]['role'] = "producer"
+
                     
                     # print(cast['rank_accu']/cast['count'], cast['name'])
                 except Exception as e:
@@ -218,55 +295,64 @@ def save_movie_subset():
             #         print(e)
             #         continue
             
-            for cast in directors:
-                try:
-                    if cast['id'] in HP.keys(): 
-                        if "director" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("director")
-                        continue
-                    if cast['name'] not in dict_non_actors.keys():  continue
-                    cast_id = dict_non_actors[cast['name']]["id"]
-                    HP[cast_id] = {}
-                    HP[cast_id]['id'] = cast_id
-                    HP[cast_id]['name'] = cast['name']
-                    HP[cast_id]['role'] = "director"
-                    HP[cast_id]['roles'] = ["director"]
-                    # print("director: ", cast['name'])
-                except Exception as e:
-                    print(e)
-                    continue
-            for cast in writers:
-                try:
-                    if cast['id'] in HP.keys(): 
-                        if "writer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("writer")
-                        continue
-                    if cast['name'] not in dict_non_actors.keys():  continue
-                    cast_id = dict_non_actors[cast['name']]["id"]
-                    HP[cast_id] = {}
-                    HP[cast_id]['id'] = cast_id
-                    HP[cast_id]['name'] = cast['name']
-                    HP[cast_id]['role'] = "writer"
-                    HP[cast_id]['roles'] = ["writer"]
-                    # print("writer: ", cast['name'])
-                except Exception as e:
-                    print(e)
-                    continue
-            for cast in producers:
-                try:
-                    if cast['id'] in HP.keys(): 
-                        if "producer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("producer")
-                        continue
-                    if cast['credit'].split(' ')[0] != "producer":  continue
-                    if cast['name'] not in dict_non_actors.keys():  continue
-                    cast_id = dict_non_actors[cast['name']]["id"]
-                    HP[cast_id] = {}
-                    HP[cast_id]['id'] = cast_id
-                    HP[cast_id]['name'] = cast['name']
-                    HP[cast_id]['role'] = "producer"
-                    HP[cast_id]['roles'] = ["producer"]
-                    # print(cast['credit'], cast['name'])
-                except Exception as e:
-                    print(e)
-                    continue
+            # for cast in directors:
+            #     try:
+            #         if cast['id'] in HP.keys(): 
+            #             if "director" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("director")
+            #             continue
+            #         if cast['name'] not in dict_non_actors.keys():  continue
+            #         cast_id = dict_non_actors[cast['name']]["id"]
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         # HP[cast_id]['role'] = "director"
+            #         HP[cast_id]['roles'] = ["director"]
+            #         most_roles = np.argmax(np.array(HP_tmp[cast_id]["roles_count"]))
+            #         if most_roles == 0:
+            #             HP[cast_id]['role'] = "actor"
+            #         elif most_roles == 1:
+            #             HP[cast_id]['role'] = "director"
+            #         elif most_roles == 2:
+            #             HP[cast_id]['role'] = "writer"
+            #         elif most_roles == 3:
+            #             HP[cast_id]['role'] = "producer"
+            #         # print("director: ", cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            # for cast in writers:
+            #     try:
+            #         if cast['id'] in HP.keys(): 
+            #             if "writer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("writer")
+            #             continue
+            #         if cast['name'] not in dict_non_actors.keys():  continue
+            #         cast_id = dict_non_actors[cast['name']]["id"]
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         HP[cast_id]['role'] = "writer"
+            #         HP[cast_id]['roles'] = ["writer"]
+            #         # print("writer: ", cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            # for cast in producers:
+            #     try:
+            #         if cast['id'] in HP.keys(): 
+            #             if "producer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("producer")
+            #             continue
+            #         if cast['credit'].split(' ')[0] != "producer":  continue
+            #         if cast['name'] not in dict_non_actors.keys():  continue
+            #         cast_id = dict_non_actors[cast['name']]["id"]
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         HP[cast_id]['role'] = "producer"
+            #         HP[cast_id]['roles'] = ["producer"]
+            #         # print(cast['credit'], cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
         except Exception as e:
             print(e)
             continue
