@@ -13,6 +13,8 @@ from os.path import isfile, join
 import glob
 from nltk import tokenize
 import re
+import pandas
+import numpy as np
 # csv.f_size_limit(sys.maxsize)
 def main():
     if __name__ == '__main__':
@@ -54,6 +56,360 @@ def main():
         genre_dict = json.load(open(r'genre_dict.json'))
         print(genre_dict.keys())
         
+
+def extract_actor_name(name_ids):
+    with open("imdb/name_basics.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        for line in tsv_file:
+            print(line)
+
+def save_movie_subset():
+    HP = {}
+    HP_tmp = {}
+    # HP
+    movie_ids = ["tt0241527", "tt0295297", "tt0304141", "tt0330373", "tt0373889", "tt0417741", "tt0926084", "tt1201607"]
+    year_start = 2001
+    year_end = 2011
+    count_min = len(movie_ids) - 2
+    avg_rank = 40
+    save_name = 'HP_{}.json'.format(avg_rank)
+    # # Marvel 
+    # movie_ids = ["tt0371746", "tt1228705", "tt1300854", "tt0800080", "tt0800369", "tt1981115", "tt3501632", "tt10648342", 
+    #              "tt0458339", "tt1843866", "tt3498820", "tt0848228", "tt2395427", "tt4154756", "tt4154796", "tt2015381", 
+    #              "tt3896198", "tt0478970", "tt5095030", "tt1211837", "tt9419884", "tt2250912", "tt6320628", "tt10872600", 
+    #              "tt1825683", "tt9114286", "tt4154664", "tt3480822", "tt9376612", "tt9032400"]
+    # year_start = 2008
+    # year_end = 2022
+    # # JamesB
+    # movie_ids = ["tt0113189", "tt0120347", "tt0143145", "tt0246460", "tt0381061", "tt0830515", "tt1074638", "tt2379713", "tt2382320"]
+    # year_start = 1995
+    # year_end = 2021
+    # count_min = 3
+    # avg_rank = 40
+    # save_name = 'JamesB_{}.json'.format(avg_rank)
+    # # StarWars
+    # movie_ids = ["tt0120915", "tt0121765", "tt0121766", "tt2488496", "tt2527336", "tt2527338", "tt3748528", "tt3778644"]
+    # year_start = 1999
+    # year_end = 2019
+    # count_min = len(movie_ids) / 2
+    # avg_rank = 39
+    # save_name = 'StarWars_{}.json'.format(avg_rank)
+    # # Xmen
+    # movie_ids = ["tt0120903", "tt0290334", "tt0376994", "tt0458525", "tt1270798", "tt1430132", "tt1877832", "tt1431045", 
+    #              "tt3385516", "tt3315342", "tt5463162", "tt6565702", "tt4682266"]
+    # year_start = 2000
+    # year_end = 2020
+    # count_min = len(movie_ids) / 2
+    # avg_rank = 40
+    # save_name = 'Xmen_{}.json'.format(avg_rank)
+    # # LoR
+    # movie_ids = ["tt0120737", "tt0167261", "tt0167260", "tt0903624", "tt1170358", "tt2310332"]
+    # year_start = 2001
+    # year_end = 2014
+    # count_min = len(movie_ids) - 2
+    # avg_rank = 40
+    # save_name = 'LoR_{}.json'.format(avg_rank)
+
+
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            if (not casts): continue
+            # get overall highest rank.
+            for cast in casts:
+                try:
+                    # if cast['rank'] > 5:  break
+                    if cast['id'] in HP_tmp.keys(): 
+                        HP_tmp[cast['id']]['rank_accu'] += cast['rank']
+                        HP_tmp[cast['id']]['count'] += 1
+                    else:
+                        # cast_id = cast['id']
+                        HP_tmp[cast['id']] = {}
+                        HP_tmp[cast['id']]['id'] = cast['id']
+                        HP_tmp[cast['id']]['name'] = cast['name']
+                        HP_tmp[cast['id']]['rank_accu'] = cast['rank']
+                        HP_tmp[cast['id']]['count'] = 1
+                    # print(cast['rank'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            # print(HP_tmp)
+
+        except Exception as e:
+            print(e)
+            continue
+    # print(HP_tmp)
+
+    non_actors = json.load(open('target_actor_info.json'))
+    dict_non_actors = {}
+    for tmp_na in range(len(non_actors)):
+        dict_non_actors[non_actors[tmp_na]['name']] = non_actors[tmp_na]
+
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits_w_ids/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            directors = credits['directors']
+            writers = credits['writers']
+            producers = credits['producers']
+            if (not casts) and (not directors) and (not writers) and (not producers): continue
+
+            for cast_key in HP_tmp:
+                try:
+                    cast = HP_tmp[cast_key]
+                    if cast['count'] < count_min:  continue
+                    if cast['rank_accu']/cast['count'] > avg_rank:  continue
+                    if cast['id'] in HP.keys(): 
+                        if "actor" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("actor")
+                        continue
+                    cast_id = cast['id']
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "actor"
+                    HP[cast_id]['roles'] = ["actor"]
+                    
+                    # print(cast['rank_accu']/cast['count'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+
+            # for cast in casts:
+            #     try:
+            #         if cast['rank'] > 5:  break
+            #         if cast['id'] in HP.keys(): continue
+            #         cast_id = cast['id']
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         print(cast['rank'], cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            # for cast in directors:
+            #     try:
+            #         if cast['id'] in HP.keys(): continue
+            #         cast_id = cast['id']
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         HP[cast_id]['role'] = "director"
+            #         # print("director: ", cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            # for cast in writers:
+            #     try:
+            #         if cast['id'] in HP.keys(): continue
+            #         cast_id = cast['id']
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         HP[cast_id]['role'] = "writer"
+            #         # print("writer: ", cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            # for cast in producers:
+            #     try:
+            #         if cast['id'] in HP.keys(): continue
+            #         if cast['credit'].split(' ')[0] != "producer":  continue
+            #         cast_id = cast['id']
+            #         HP[cast_id] = {}
+            #         HP[cast_id]['id'] = cast_id
+            #         HP[cast_id]['name'] = cast['name']
+            #         HP[cast_id]['role'] = "producer"
+            #         # print(cast['credit'], cast['name'])
+            #     except Exception as e:
+            #         print(e)
+            #         continue
+            
+            for cast in directors:
+                try:
+                    if cast['id'] in HP.keys(): 
+                        if "director" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("director")
+                        continue
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "director"
+                    HP[cast_id]['roles'] = ["director"]
+                    # print("director: ", cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            for cast in writers:
+                try:
+                    if cast['id'] in HP.keys(): 
+                        if "writer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("writer")
+                        continue
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "writer"
+                    HP[cast_id]['roles'] = ["writer"]
+                    # print("writer: ", cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+            for cast in producers:
+                try:
+                    if cast['id'] in HP.keys(): 
+                        if "producer" not in HP[cast_id]['roles']: HP[cast_id]['roles'].append("producer")
+                        continue
+                    if cast['credit'].split(' ')[0] != "producer":  continue
+                    if cast['name'] not in dict_non_actors.keys():  continue
+                    cast_id = dict_non_actors[cast['name']]["id"]
+                    HP[cast_id] = {}
+                    HP[cast_id]['id'] = cast_id
+                    HP[cast_id]['name'] = cast['name']
+                    HP[cast_id]['role'] = "producer"
+                    HP[cast_id]['roles'] = ["producer"]
+                    # print(cast['credit'], cast['name'])
+                except Exception as e:
+                    print(e)
+                    continue
+        except Exception as e:
+            print(e)
+            continue
+    # print(len(HP.keys()), HP)
+
+    # read title_ratings(get rating & popularity), title_basics(get movie name & year)
+    movie_ratings = {}
+    with open("imdb/title_ratings.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        line_count = 0
+        for line in tsv_file:
+            if line_count==0: 
+                line_count += 1
+                continue
+            movie_ratings[line[0]] = [float(line[1]), float(line[2])] # rating, vote
+    # print(movie_ratings)
+    movie_basics = {}
+    with open("imdb/title_basics.tsv") as file:
+        tsv_file = csv.reader(file, delimiter="\t")
+        line_count = 0
+        for line in tsv_file:
+            if line_count==0: 
+                line_count += 1
+                continue
+            if line[1] != "movie": continue
+            if line[5] == '\\N': continue
+            movie_basics[line[0]] = [line[3], int(line[5])] # name, year     
+    # print(movie_basics)
+
+    print(HP)
+    pop_min = 1000000000000000
+    pop_max = -1
+    delete_list = []
+    keep_list = []
+    for ppl in HP.keys():
+        # HP[ppl]['rate'] = np.zeros((year_end - year_start + 1))
+        # HP[ppl]['vote'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_count'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['popularity'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['popularity_max'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['pop_bin'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_name'] = np.zeros((year_end - year_start + 1))
+        HP[ppl]['movie_name'] = list(HP[ppl]['movie_name'])
+        ppl_movies = []
+        actor_movie_list = {}
+        try:
+            actor_movie_list = json.load(open('actor_careers/{}.json'.format(ppl)))
+        except Exception as e:
+            print(e, HP[ppl]['name'], HP[ppl]['role'])
+            delete_list.append(ppl)
+            continue
+
+        print(ppl)
+        for role in actor_movie_list.keys():
+            if role == "id": continue
+            for movie in actor_movie_list[role]:
+                ppl_movies.append(movie)
+                if movie_basics[movie][1] <= year_end and movie_basics[movie][1] >= year_start:
+                    # HP[ppl]['rate'][movie_basics[movie][1] - year_start] += movie_ratings[movie][0]
+                    # HP[ppl]['vote'][movie_basics[movie][1] - year_start] += movie_ratings[movie][1]
+                    popular = movie_ratings[movie][0]*movie_ratings[movie][1]
+                    year_idx = movie_basics[movie][1] - year_start
+                    m_name = movie_basics[movie][0]
+                    # print(pop_min, pop_max, popular, year_idx, HP[ppl]['popularity_max'])
+
+                    HP[ppl]['popularity'][year_idx] += popular
+                    if popular > HP[ppl]['popularity_max'][year_idx]:
+                        HP[ppl]['popularity_max'][year_idx] = popular
+                        HP[ppl]['movie_name'][year_idx] = m_name
+                    HP[ppl]['movie_count'][year_idx] += 1
+                    HP[ppl]['pop_bin'][year_idx] = HP[ppl]['popularity_max'][year_idx]
+                    # HP[ppl]['pop_bin'][movie_basics[movie][1] - year_start] = float(HP[ppl]['popularity'][movie_basics[movie][1] - year_start]/HP[ppl]['movie_count'][movie_basics[movie][1] - year_start])
+                    # print(HP[ppl]['pop_bin'][movie_basics[movie][1] - year_start])
+        
+        if HP[ppl]['movie_count'][0] == 0: # must have works by the start year of the subset.
+            # delete_list.append(ppl)
+            HP[ppl]['movie_count'][0] = 1
+        # else:
+        for tmp in range(year_end - year_start + 1):
+            if HP[ppl]['movie_count'][tmp]!=0:
+                keep_list.append(HP[ppl]['pop_bin'][tmp])
+            
+
+        # if max(HP[ppl]['pop_bin']) > pop_max: 
+        #     pop_max = max(HP[ppl]['pop_bin'])
+        #     print("pop_max: ", pop_max)
+        # if min(HP[ppl]['pop_bin']) < pop_min: 
+        #     pop_min = min(HP[ppl]['pop_bin'])
+        #     print("pop_min: ", pop_min)
+
+    for ppl in delete_list:
+        HP.pop(ppl, None)
+    pop_max = max(keep_list)
+    pop_min = min(keep_list)
+
+    for ppl in HP.keys():
+        try:
+            # print(ppl, HP[ppl]['name'], HP[ppl]['popularity'], HP[ppl]['pop_bin'])
+            # print(pop_min, pop_max, HP[ppl]['pop_bin'])
+            for pop_idx in range(year_end - year_start + 1):
+                # HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['pop_bin'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
+                
+                if HP[ppl]['movie_count'][pop_idx] != 0:
+                    HP[ppl]['pop_bin'][pop_idx] = int((HP[ppl]['pop_bin'][pop_idx]-pop_min)*5 / (pop_max-pop_min)) # 0~5
+                else:
+                    HP[ppl]['pop_bin'][pop_idx] = HP[ppl]['pop_bin'][pop_idx-1]
+            
+            HP[ppl]['movie_count'] = list(HP[ppl]['movie_count'])
+            HP[ppl]['popularity'] = list(HP[ppl]['popularity'])
+            HP[ppl]['popularity_max'] = list(HP[ppl]['popularity_max'])
+            HP[ppl]['pop_bin'] = list(HP[ppl]['pop_bin'])
+
+            print(ppl, HP[ppl]['name'], HP[ppl]['movie_count'], HP[ppl]['pop_bin'])
+        except Exception as e:
+            print(e)
+            continue
+    # print(len(HP.keys()), HP)
+
+    with open(save_name, 'w') as f:
+        json.dump(HP, f)
+
+    return
+
+def extract_actor_list_from_movie_subset(movie_ids):
+    actor_set = set()
+    for movie_id in movie_ids:
+        try:
+            credits = json.load(open('film_credits/{}.json'.format(movie_id)))
+            casts = credits['casts']
+            if not casts: continue
+            cast_ids = [cast['id'] for cast in casts]
+            actor_set.update(cast_ids)
+        except Exception as e:
+            print(e)
+            continue
+    return list(actor_set)
 
 def tsv_to_dicts(csvFilePath):
     #read csv file
@@ -321,20 +677,6 @@ def filter_movie(movie_id_dict, english_movie_ids):
     save_json(kept, r'kept.json')
     return kept
     # save_json(genre_dict, r"genre_dict.json")
-
-def extract_actor_list_from_movie_subset(movie_ids):
-    actor_set = set()
-    for movie_id in movie_ids:
-        try:
-            credits = json.load(open('film_credits/{}.json'.format(movie_id)))
-            casts = credits['casts']
-            if not casts: continue
-            cast_ids = [cast['id'] for cast in casts]
-            actor_set.update(cast_ids)
-        except Exception as e:
-            print(e)
-            continue
-    return list(actor_set)
 
 def extract_actor_career(actor_list, movie_credits):
     actor_career_dict = {}
