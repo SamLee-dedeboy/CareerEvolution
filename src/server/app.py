@@ -16,3 +16,7 @@ def get_artists():
 @app.route("/data/career/<artist_id>")
 def get_career(artist_id):
     return json.dumps(data_manager.loadCareer(artist_id))
+
+@app.route("/data/info/<artist_id>")
+def get_info(artist_id):
+    return json.dumps(data_manager.loadInfo(artist_id))

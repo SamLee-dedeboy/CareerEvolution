@@ -6,7 +6,8 @@ from nltk import tokenize
 
 class DataManager():
     def __init__(self):
-        self.artist_infos = loadJson(r"data/target_actor_info.json")
+        artist_infos = loadJson(r"data/target_actor_info.json")
+        self.actor_info_dict = {x['id']: x for x in artist_infos}
         self.movie_infos = loadJson(r"data/movie_pool.json")
         self.careers = loadJson(r"data/career_w_snippets.json")
         self.snippets_path = "data/career_snippets/"
@@ -14,6 +15,17 @@ class DataManager():
     def loadCareer(self, artist_id):
         career = self.careers[artist_id]
         return self.preprocess_career(artist_id, self.add_infos(career))
+    def loadInfo(self, artist_id):
+        info = self.actor_info_dict[artist_id]
+        knownForIds = info['knownForTitles'].split(",")
+        titles = []
+        for id in knownForIds:
+            print(id, self.movie_infos[id])
+            if id in self.movie_infos:
+                titles.append(self.movie_infos[id]['title'])
+        info['knownTitles'] = titles
+
+        return info
 
     def add_infos(self, career):
         if not career: return [] 
@@ -80,6 +92,11 @@ class DataManager():
             for movie in stage['movies']:
                 movie['stage'] = stage_index
                 movie['snippet'] = add_sentence_index(movie['snippet'], paragraph_list)
+
+            if header == "empty":
+                min_year = min(list(map(lambda movie: movie['year'], stage['movies'])))
+                max_year = max(list(map(lambda movie: movie['year'], stage['movies'])))
+                header = min_year + " - " + max_year
 
             stages_list[stage_index] = {
                 "header": header,

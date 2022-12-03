@@ -1,6 +1,13 @@
 <template>
     <div class="timeline-container">
-        <div class="description-container">
+        <div class="description-container" v-if='artist_info' >
+            <div class="actor-info">
+                <h2> {{ artist_info.name }} </h2>
+                <br>
+                Primary Profession: {{ artist_info.primaryProfession }}
+                <br>
+                Known Titles: {{ artist_info.knownTitles.join(", ") }}
+            </div>
             <div v-for="(section, section_index) in section_descriptions" 
                 :id="'section_'+section_index" 
                 class="section"
@@ -45,6 +52,7 @@ import { Timeline, TimelineConfig } from "./charts/Timeline"
 import scroller from "./scroller"
 
 const props = defineProps({
+    artist_info: Object as () => any,
     timeline_data: Object as () => any,
     section_descriptions: Object as () => any[],
 })
@@ -137,7 +145,7 @@ function setupScroller() {
 
 :deep(.active) {
     position: fixed;
-    top: 15% !important;
+    top: 28% !important;
     visibility: visible;
     opacity: 1;
 }
@@ -174,5 +182,9 @@ function setupScroller() {
     border: solid 3px black;
     padding: 5px;
 }
-
+.actor-info {
+    position: fixed;
+    top: 8%;
+    width: inherit;
+}
 </style>
