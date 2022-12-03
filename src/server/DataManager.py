@@ -68,7 +68,7 @@ class DataManager():
                 paragraph = sentence['p']
                 new_stage['paragraphs'].add(paragraph)
 
-        if empty_movies:
+        if empty_movies and cur_stage != "":
             stages[cur_stage]["movies"] += empty_movies
 
         # post process
