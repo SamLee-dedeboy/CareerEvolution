@@ -29,6 +29,9 @@
         <div id="dropdown_view">
             <Dropdown @selectedChange="handleChange_dropdown"/>
         </div>
+        <div id="button_view">
+            <button type="button" v-if="dataExists"  v-on:click="handleButton">Go Timeline</button>
+        </div>
         <div id="lines_view">
             <LineChart v-if="dataExists" :myData="mySubset" :mySubsetName="mySelection.text" @selectedChange="handleSelectActor"></LineChart>
         </div>
@@ -54,7 +57,8 @@ export default {
         return {
             dataExists: false,
             mySubset: undefined,
-            mySelection: undefined
+            mySelection: undefined,
+            myActor: undefined
         }
     },
     components: {
@@ -92,7 +96,11 @@ export default {
         },
         handleSelectActor(selected) {
             console.log('parent noticed change actor ' + selected.id + selected.name);
-            this.$router.push({ name: 'actorview', params: { id: selected.id } })
+            this.myActor = selected.id;
+            // this.$router.push({ name: 'actorview', params: { id: selected.id } })
+        },
+        handleButton() {
+            // this.$router.push({ name: 'actorview', params: { id: this.myActor } })
         }
     }
 }
@@ -129,13 +137,21 @@ export default {
     } */
     #dropdown_view {
         position: relative;
+        margin-top: 10px;
         width: 100%;
+        height: 3%;
+    }
+    #button_view {
+        position: relative;
+        margin-top: 10px;
+        width: 100%;
+        height: 3%;
     }
     #lines_view {
         height: 90%;
         width: 95%;
         position: relative;
-        margin-top: 10px;
+        margin-top: 2px;
         margin-bottom: 10px;
         margin-left: auto;
         margin-right: auto;
