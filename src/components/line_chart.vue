@@ -48,7 +48,8 @@
                         id: key,
                         name: data[key]['name'],
                         role: data[key]['role'],
-                        roles: data[key]['roles']
+                        roles: data[key]['roles'],
+                        img: data[key]['img']
                     };
                     ppl_order.push(tmp)
                 });
@@ -73,6 +74,7 @@
                             m_name: data[ppl.id]['movie_name'][idx],
                             role_name: ppl.role,
                             roles: ppl.roles,
+                            img:ppl.img
                         };
                         if (ppl.role == "actor")    ppl_year_pre.role = 0;
                         else if (ppl.role == "director")    ppl_year_pre.role = 1;
@@ -87,6 +89,7 @@
                             m_name: data[ppl.id]['movie_name'][idx],
                             role_name: ppl.role,
                             roles: ppl.roles,
+                            img:ppl.img
                         };
                         if (ppl.role == "actor")    ppl_year_next.role = 0;
                         else if (ppl.role == "director")    ppl_year_next.role = 1;
@@ -111,7 +114,9 @@
             drawLineChart(data, id) {
                 const parent_this = this;
 
-                const margin = {left: 100, right: 150, top: 50, bottom: 100};
+                const margin = {left: 100, right: 150, top: 35, bottom: 100};
+                // let width  = d3.select(id).node().getBoundingClientRect().width;
+                // let height = d3.select(id).node().getBoundingClientRect().height;
                 const width = 1000;
                 const height = 700;
 
@@ -189,6 +194,7 @@
                     const R = d3.map(chartData, d => d.role_name);
                     const Rs = d3.map(chartData, d => d.roles);
                     const D = d3.map(chartData, d => d.id);
+                    const P = d3.map(chartData, d => d.img);
                     // [actor: blue, director: green, writer: purple, producer: brown]
                     const colors = ["steelblue", "#4C9900", "#990099", "#999900"]; 
 
@@ -303,6 +309,16 @@
                                     .attr('opacity', '1');
                                     // .attr('stroke', 'red')
                                 
+                                if (P[0] != 0) {
+                                    svg.append("image")
+                                        .attr("class", "actor_img")
+                                        .attr('x', 0)
+                                        .attr('y', 0)
+                                        .attr('width', 50)
+                                        .attr('height', 50)
+                                        .attr("xlink:href", P[0])
+                                }
+                                
                                 svg.append("text")
                                     .attr("class", "click_line")
                                     .attr("x", margin.left + 5)
@@ -336,6 +352,8 @@
                                 d3.selectAll(".all_lines").transition()
                                     .duration('50')
                                     .attr('opacity', '1');
+                                d3.selectAll(".actor_img").remove();
+                                
                             }
                         });
                     
@@ -416,6 +434,16 @@
                                     .attr('opacity', '1');
                                     // .attr('stroke', 'red')
                                 
+                                if (P[0] != 0) {
+                                    svg.append("image")
+                                        .attr("class", "actor_img")
+                                        .attr('x', 0)
+                                        .attr('y', 0)
+                                        .attr('width', 50)
+                                        .attr('height', 50)
+                                        .attr("xlink:href", P[0])
+                                }
+                                
                                 svg.append("text")
                                     .attr("class", "click_line")
                                     .attr("x", margin.left + 5)
@@ -447,12 +475,12 @@
                                 d3.selectAll(".all_lines").transition()
                                     .duration('50')
                                     .attr('opacity', '1');
+                                d3.selectAll(".actor_img").remove();
                             }
                         });
                     ppl_count += 1;
 
                 });
-                
             },
         }
     }
@@ -461,7 +489,7 @@
 
 
 <style>
-    #bar {
+    #lines {
         width:  100%;
         height: 100%;
     }

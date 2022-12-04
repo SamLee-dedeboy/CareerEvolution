@@ -53,8 +53,9 @@ def main():
         # scrape_career(actor_list=actor_info_list)
         # generate_movie_pool()
         # add_snippets()
-        genre_dict = json.load(open(r'genre_dict.json'))
-        print(genre_dict.keys())
+        # genre_dict = json.load(open(r'genre_dict.json'))
+        # print(genre_dict.keys())
+        save_movie_subset()
         
 
 def extract_actor_name(name_ids):
@@ -114,6 +115,11 @@ def save_movie_subset():
     dict_non_actors = {}
     for tmp_na in range(len(non_actors)):
         dict_non_actors[non_actors[tmp_na]['name']] = non_actors[tmp_na]
+    
+    actor_img = json.load(open('images.json'))
+    dict_actor_imgs = {}
+    for tmp_img in range(len(actor_img)):
+        dict_actor_imgs[actor_img[tmp_img]['id']] = actor_img[tmp_img]
 
     for movie_id in movie_ids:
         try:
@@ -128,6 +134,8 @@ def save_movie_subset():
                 try:
                     # if cast['rank'] > 5:  break
                     if cast['id'] in HP_tmp.keys(): 
+                        if "image" in dict_actor_imgs[cast['id']].keys():
+                            HP_tmp[cast['id']]['img'] = dict_actor_imgs[cast['id']]['image']
                         HP_tmp[cast['id']]['rank_accu'] += cast['rank']
                         HP_tmp[cast['id']]['count'] += 1
                         HP_tmp[cast['id']]['roles_count'] += [1, 0, 0, 0]
@@ -142,6 +150,8 @@ def save_movie_subset():
                         HP_tmp[cast['id']]['count'] = 1
                         HP_tmp[cast['id']]['roles_count'] = [1, 0, 0, 0]
                         HP_tmp[cast['id']]['roles'] = ['actor']
+                        if "image" in dict_actor_imgs[cast['id']].keys():
+                            HP_tmp[cast['id']]['img'] = dict_actor_imgs[cast['id']]['image']
                     # print(cast['rank'], cast['name'])
                 except Exception as e:
                     print(e)
@@ -155,12 +165,16 @@ def save_movie_subset():
                         HP_tmp[cast_id]['roles_count'] += [0, 1, 0, 0]
                         if 'director' not in HP_tmp[cast_id]['roles']:
                             HP_tmp[cast_id]['roles'].append('director')
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     else:
                         HP_tmp[cast_id] = {}
                         HP_tmp[cast_id]['id'] = cast_id
                         HP_tmp[cast_id]['name'] = cast['name']
                         HP_tmp[cast_id]['roles_count'] = [0, 1, 0, 0]
                         HP_tmp[cast_id]['roles'] = ['director']
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     # print(cast['rank'], cast['name'])
                 except Exception as e:
                     print(e)
@@ -174,12 +188,16 @@ def save_movie_subset():
                         HP_tmp[cast_id]['roles_count'] += [0, 0, 1, 0]
                         if 'writer' not in HP_tmp[cast_id]['roles']:
                             HP_tmp[cast_id]['roles'].append('writer')
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     else:
                         HP_tmp[cast_id] = {}
                         HP_tmp[cast_id]['id'] = cast_id
                         HP_tmp[cast_id]['name'] = cast['name']
                         HP_tmp[cast_id]['roles_count'] = [0, 0, 1, 0]
                         HP_tmp[cast_id]['roles'] = ['writer']
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     # print(cast['rank'], cast['name'])
                 except Exception as e:
                     print(e)
@@ -193,12 +211,16 @@ def save_movie_subset():
                         HP_tmp[cast_id]['roles_count'] += [0, 0, 0, 1]
                         if 'producer' not in HP_tmp[cast_id]['roles']:
                             HP_tmp[cast_id]['roles'].append('producer')
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     else:
                         HP_tmp[cast_id] = {}
                         HP_tmp[cast_id]['id'] = cast_id
                         HP_tmp[cast_id]['name'] = cast['name']
                         HP_tmp[cast_id]['roles_count'] = [0, 0, 0, 1]
                         HP_tmp[cast_id]['roles'] = ['producer']
+                        if "image" in dict_actor_imgs[cast_id].keys():
+                            HP_tmp[cast_id]['img'] = dict_actor_imgs[cast_id]['image']
                     # print(cast['rank'], cast['name'])
                 except Exception as e:
                     print(e)
@@ -235,6 +257,11 @@ def save_movie_subset():
                     HP[cast_id]['name'] = cast['name']
                     # HP[cast_id]['role'] = "actor"
                     HP[cast_id]['roles'] = cast['roles']
+
+                    if "img" in cast.keys():
+                        HP[cast_id]['img'] = cast['img']
+                    else:
+                        HP[cast_id]['img'] = 0
 
                     most_roles = np.argmax(np.array(cast["roles_count"]))
                     if most_roles == 0:
