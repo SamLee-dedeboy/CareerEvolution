@@ -1,6 +1,12 @@
 import * as d3 from "d3"
 
 const track_index2name = ['actor', 'director', 'writer', 'producer']
+Object.defineProperty(String.prototype, 'capitalize', {
+    value: function() {
+      return this.charAt(0).toUpperCase() + this.slice(1);
+    },
+    enumerable: false
+  });
 interface Margin {
     top: number,
     bottom: number,
@@ -140,6 +146,13 @@ export class Timeline {
         const canvas = this.svg.select("g.canvas")
         const track_names = Object.keys(this.cfg.tracks)
         const track_width = this.cfg.xScale.bandwidth()
+        canvas.append("text")
+            .attr("class", "track-header")
+            .attr("x", -30)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "2em")
+            .text("As: ")
         track_names.forEach((track_name, index) => {
             const track_color = this.cfg.tracks[track_name]
             canvas.append("rect")
@@ -148,6 +161,14 @@ export class Timeline {
                 .attr("width", track_width)
                 .attr("height", this.contentHeight)
                 .attr("fill", track_color)
+            canvas.append("text")
+                .attr("class", "track-label")
+                .attr("x", track_width/2 + track_width * index)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "2em")
+                .text(track_name.capitalize())
+                .style("opacity", "0.5")
         })
     }
     setupTimeline(data, timeline_movies) {
