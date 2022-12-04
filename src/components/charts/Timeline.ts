@@ -156,6 +156,7 @@ export class Timeline {
         track_names.forEach((track_name, index) => {
             const track_color = this.cfg.tracks[track_name]
             canvas.append("rect")
+                .attr("class", track_name)
                 .attr("x", track_width * index)
                 .attr("y", 0)
                 .attr("width", track_width)
@@ -169,6 +170,7 @@ export class Timeline {
                 .attr("font-size", "2em")
                 .text(track_name.capitalize())
                 .style("opacity", "0.5")
+                .style("position", "fixed")
         })
     }
     setupTimeline(data, timeline_movies) {

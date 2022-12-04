@@ -45,10 +45,10 @@ import LineChart from '../components/line_chart.vue';
 import Dropdown from '../components/dropdown_subset.vue';
 import Legend from '../components/legend_text.vue';
 import HP from "../preprocess/HP_40.json"; /* Example of reading in data direct from file*/
-// import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
-// import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
-// import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
-// import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
+import LoR from "../preprocess/LoR_40.json"; /* Example of reading in data direct from file*/
+import Xmen from "../preprocess/Xmen_40.json"; /* Example of reading in data direct from file*/
+import StarWars from "../preprocess/StarWars_39.json"; /* Example of reading in data direct from file*/
+import JamesB from "../preprocess/JamesB_40.json"; /* Example of reading in data direct from file*/
 import { useRoute } from 'vue-router'
 
 
@@ -100,7 +100,7 @@ export default {
             // this.$router.push({ name: 'actorview', params: { id: selected.id } })
         },
         handleButton() {
-            // this.$router.push({ name: 'actorview', params: { id: this.myActor } })
+            this.$router.push({ name: 'actorview', params: { id: this.myActor } })
         }
     }
 }

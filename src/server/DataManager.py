@@ -8,6 +8,8 @@ class DataManager():
     def __init__(self):
         artist_infos = loadJson(r"data/target_actor_info.json")
         self.actor_info_dict = {x['id']: x for x in artist_infos}
+        artist_images = loadJson(r"data/images.json")
+        self.artist_image_dict = {x['id']: x['image'] for x in artist_images}
         self.movie_infos = loadJson(r"data/movie_pool.json")
         self.careers = loadJson(r"data/career_w_snippets.json")
         self.snippets_path = "data/career_snippets/"
@@ -17,6 +19,9 @@ class DataManager():
         return self.preprocess_career(artist_id, self.add_infos(career))
     def loadInfo(self, artist_id):
         info = self.actor_info_dict[artist_id]
+        if artist_id in self.artist_image_dict:
+            image = self.artist_image_dict[artist_id] 
+            info['image'] = image
         knownForIds = info['knownForTitles'].split(",")
         titles = []
         for id in knownForIds:

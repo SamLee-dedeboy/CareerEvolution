@@ -2,11 +2,18 @@
     <div class="timeline-container">
         <div class="description-container" v-if='artist_info' >
             <div class="actor-info">
-                <h2> {{ artist_info.name }} </h2>
-                <br>
-                Primary Profession: {{ artist_info.primaryProfession }}
-                <br>
-                Known Titles: {{ artist_info.knownTitles.join(", ") }}
+                <div class='actor-info-header-container'> 
+                    <img class='actor-info-image' :src='artist_info.image'>
+                    <div class='actor-info-container'>
+                        <h2 class='actor-info-header'> {{ artist_info.name }} </h2>
+                        <div class='actor-info-content'>
+                            <br>
+                            <span class='actor-info-content-subtitle'> Primary Profession: </span> {{ artist_info.primaryProfession }}
+                            <br>
+                            <span class='actor-info-content-subtitle'> Known Titles: </span> {{ artist_info.knownTitles.join(", ") }}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div v-for="(section, section_index) in section_descriptions" 
                 :id="'section_'+section_index" 
@@ -62,10 +69,18 @@ const section_offsets: Ref<number[]> = ref([])
 const timeline = new Timeline(svgSelector.value, {
     width: Math.min(700, (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth)*0.6),
     tracks: {
-        "actor": "#F0F0C9",
-        "producer": "#72DDF7",
-        "director": "#E7C8DD",
-        "writer": "#FA824C",
+        // "actor": "#77625C",
+        // "producer": "#72DDF7",
+        // "director": "#E7C8DD",
+        // "writer": "#FA824C",
+        // "actor": "steelblue", 
+        // "producer": "#77625C",
+        // "director": "#4C9900", 
+        // "writer": "#990099", 
+        "actor": "#66aeea", 
+        "producer": "#a2847c",
+        "director": "#A0EA57", 
+        "writer": "#f058f0", 
     },
 })
 
@@ -186,4 +201,33 @@ function setupScroller() {
     top: 8%;
     width: inherit;
 }
+
+.actor-info-header-container {
+    display: flex;
+    
+} 
+
+.actor-info-image {
+    width: auto;
+    height: 202px;
+}
+
+.actor-info-header {
+    width: fit-content;
+    display: inline-block;
+    text-align: center;
+} 
+
+.actor-info-container {
+    text-align: center;
+}
+
+.actor-info-content {
+    text-align: left;
+    margin-left: 18px;
+}
+.actor-info-content-subtitle {
+  font-weight: bold;
+}
+
 </style>
