@@ -277,7 +277,7 @@ export class Timeline {
                     const node_center_x = movie_data.x
                     const node_center_y = self.yInterval(+movie_data.year, start_year, stage_index) 
                     const calculate_icon_size = (genre_length, circle_size) => {
-                        if(genre_length == 1) return circle_size/2+1
+                        if(genre_length == 1) return circle_size*2
                         if(genre_length == 2) return circle_size
                         // if(genre_length == 3) return circle_size/Math.sqrt(3) + circle_size/2
                         if(genre_length == 3) return 2*Math.sqrt(3)/(2+Math.sqrt(3))*circle_size
@@ -333,7 +333,7 @@ export class Timeline {
                     .call(wrap, 100)
 
                 // snippets
-                const snippets = movie_data.map(movie => movie.snippet.map(snippet => snippet.snippet).join(" ") || "")
+                const snippets = movie_data.map(movie => movie.snippet.map(snippet => snippet.snippet).join(" ") || "").filter(snippet => snippet != "")
                 d3.select(this).append("text")
                     .attr("class", "snippets")
                     .attr("x", self.getSnippetPosition(movie_data[0].role) + 30)
@@ -342,6 +342,7 @@ export class Timeline {
                     .style("pointer-events", "none")
                     .text(snippets)
                     .call(wrap, self.getWrapWidth(movie_data[0].role))
+                    .raise()
             }) 
         })
 

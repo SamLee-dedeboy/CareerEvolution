@@ -106,7 +106,6 @@ function setupScroller() {
         const active_step = d3.selectAll(".step").filter((d, i) => i === index)
         const active_stage = d3.select(`#section_${active_step.data()[0].stage}`)
         const active_sentence_infos = active_step.data()[0].snippet.map(snippet => { return {"p": snippet.p, "index": snippet.index} })
-        console.log(active_step.data()[0], active_step.data()[0].stage, active_sentence_infos)
         d3.selectAll("span.sentence").style("background", "unset")
         // d3.selectAll("image").style("opacity", 1)
         active_sentence_infos.forEach(sentence_info => {
