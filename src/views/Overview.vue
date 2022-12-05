@@ -53,7 +53,7 @@ import { useRoute } from 'vue-router'
 
 
 export default {
-    data(){
+    data() {
         return {
             dataExists: false,
             mySubset: undefined,
@@ -66,11 +66,12 @@ export default {
         LineChart,
         Legend
     },
-    created(){
+    created() {
         /* Fetch via CSV */
+    },
+    mounted() {
         this.drawFromJson()
     },
-    mounted(){},
     methods: {
         drawFromJson(){
             // console.log("In overview: ", testData);

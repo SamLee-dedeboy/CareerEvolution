@@ -154,14 +154,15 @@ function setupScroller() {
 
 .scrolled-paragraphs {
     overflow-y: auto;
-    height: 600px;
+    height: 100%;
 }
 
 :deep(.active) {
     position: fixed;
-    top: 28% !important;
+    top: 38% !important;
     visibility: visible;
     opacity: 1;
+    height: 48%; 
 }
 .description-container {
   width: 30%;
@@ -198,18 +199,22 @@ function setupScroller() {
 }
 .actor-info {
     position: fixed;
-    top: 8%;
+    top: 6%;
     width: inherit;
+    height: 30%;
+    display: flex;
 }
 
 .actor-info-header-container {
     display: flex;
-    
+    justify-content: center;
+    text-align: center;
+    justify-items: center;
 } 
 
 .actor-info-image {
     width: auto;
-    height: 202px;
+    height: 100%;
 }
 
 .actor-info-header {

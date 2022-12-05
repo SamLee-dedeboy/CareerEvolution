@@ -25,7 +25,6 @@ class DataManager():
         knownForIds = info['knownForTitles'].split(",")
         titles = []
         for id in knownForIds:
-            print(id, self.movie_infos[id])
             if id in self.movie_infos:
                 titles.append(self.movie_infos[id]['title'])
         info['knownTitles'] = titles
