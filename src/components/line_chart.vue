@@ -151,37 +151,121 @@
                     .attr('y', yScale(55))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FEF0D5");
+                    .attr("fill", "#FEF0D5")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
                 const rect_1 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(105))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FDE1AC");
+                    .attr("fill", "#FDE1AC")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
                 const rect_2 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(155))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FCD382");
+                    .attr("fill", "#FCD382")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
                 const rect_3 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(205))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FBC459");
+                    .attr("fill", "#FBC459")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
                 const rect_4 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(255))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#FAB52F");
+                    .attr("fill", "#FAB52F")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
                 const rect_5 = svg.append("rect")
                     .attr('x', xScale(0))
                     .attr('y', yScale(305))
                     .attr('height', (height - margin.top - margin.bottom)/6)
                     .attr('width', width - margin.left)
-                    .attr("fill", "#F9A706");
+                    .attr("fill", "#F9A706")
+                    .on('click', function(d){
+                        d3.selectAll(".all_names").transition()
+                            .duration('0')
+                            .attr('opacity', '0.3');
+                        d3.selectAll(".all_lines").transition()
+                            .duration('0')
+                            .attr('opacity', '1')
+                            .attr('stroke-width', 1.5);
+                        d3.selectAll(".actor_img").remove();
+                        d3.selectAll(".click_line").remove();
+                        parent_this.if_selected = false;
+                        parent_this.selected_actor = {};
+                        parent_this.$emit('selectedChange', parent_this.selected_actor);
+                    });
 
                 let ppl_count = 0;
                 data.forEach(chartData => {
@@ -195,8 +279,8 @@
                     const Rs = d3.map(chartData, d => d.roles);
                     const D = d3.map(chartData, d => d.id);
                     const P = d3.map(chartData, d => d.img);
-                    // [actor: blue, director: green, writer: purple, producer: brown]
-                    const colors = ["steelblue", "#4C9900", "#990099", "#999900"]; 
+                    // [actor: steelblue, director: #4C9900, writer: #990099, producer: #77625C]
+                    const colors = ["steelblue", "#4C9900", "#990099", "#77625C"]; 
 
                     // Construct a line generator.
                     const line = d3.line()
@@ -369,6 +453,7 @@
                         .attr('name', N[0])
                         .attr('roles', Rs[0])
                         .attr('actor_id', D[0])
+                        .attr("class", "all_names")
                         .attr('id', "count_"+String(ppl_count))
                         .on('mouseover', function(d){
                             if (parent_this.if_selected == false){
