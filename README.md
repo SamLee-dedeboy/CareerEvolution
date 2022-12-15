@@ -89,7 +89,8 @@ First setup the environment by running:
 conda env create -f environment.yml
 conda activate career_evolution
 ```
-To launch the server, navigate to src/server/ and run:
+Then unzip `data.zip` under `src/server/`. The server will read from `src/server/data`.
+To launch the server, navigate to `src/server/` and run:
 ```shell
 flask run
 # flask will automatically detect app.py as the entry, 
