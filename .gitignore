@@ -27,3 +27,4 @@ dist-ssr
 __pycache__/
 *.tsv
 *.zip
+!data.zip
