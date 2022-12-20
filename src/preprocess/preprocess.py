@@ -1128,8 +1128,8 @@ def generate_movie_info_w_snippet(actor_snippets, actor_career_dict, movie_pool_
 def splitSentences(content, post_process=lambda x:x):
     return list(map(post_process, tokenize.sent_tokenize(content)))
 
-
-main()
+if __name__ == '__main__':
+    main()
 
 
 
